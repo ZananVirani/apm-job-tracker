@@ -141,7 +141,7 @@ python3 -m apm_notifier sources
 python3 -m unittest discover -s tests -v
 ```
 
-The cloud workflow's optional **show_tiktok_history** input prints the restored TikTok history for delivery audits. `notified_at` is the stored notification timestamp; older silent baselines can also populate it, so corroborate a disputed historical delivery with the corresponding run's `Alert delivered` log. LinkedIn alert dates do not establish when an employer first published a job.
+The cloud workflow's optional **show_tiktok_history** input runs a read-only audit independently of the full monitoring scan. It prints restored TikTok history, skips notification delivery, and preserves the cloud cache. `notified_at` is the stored notification timestamp; older silent baselines can also populate it, so corroborate a disputed historical delivery with the corresponding run's `Alert delivered` log. LinkedIn alert dates do not establish when an employer first published a job.
 
 ## Customize the targets
 
