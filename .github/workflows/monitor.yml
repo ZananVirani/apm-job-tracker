@@ -11,6 +11,11 @@ on:
         required: false
         type: boolean
         default: false
+      show_tiktok_history:
+        description: Report restored TikTok discovery and notification timestamps
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -64,6 +69,10 @@ jobs:
 
       - name: Verify monitoring rules
         run: python3 -m unittest discover -s tests -q
+
+      - name: Report restored TikTok notification history
+        if: ${{ inputs.show_tiktok_history }}
+        run: python3 -m apm_notifier history --company TikTok
 
       - name: Check career pages and deliver new alerts
         run: python3 -m apm_notifier run --once

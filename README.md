@@ -131,12 +131,17 @@ python3 -m apm_notifier check
 # Source health and notification backlog
 python3 -m apm_notifier status
 
+# Read stored discovery and notification timestamps without modifying history
+python3 -m apm_notifier history --company TikTok
+
 # Show all configured companies
 python3 -m apm_notifier sources
 
 # Run automated tests
 python3 -m unittest discover -s tests -v
 ```
+
+The cloud workflow's optional **show_tiktok_history** input prints the restored TikTok history for delivery audits. `notified_at` is the stored notification timestamp; older silent baselines can also populate it, so corroborate a disputed historical delivery with the corresponding run's `Alert delivered` log. LinkedIn alert dates do not establish when an employer first published a job.
 
 ## Customize the targets
 

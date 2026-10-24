@@ -9,6 +9,53 @@ from apm_notifier.state import StateStore
 
 
 class StateStoreTests(unittest.TestCase):
+    def test_history_filters_exact_company_ignoring_case_and_keeps_recorded_timestamps(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            store = StateStore(Path(directory) / "state.sqlite3")
+            try:
+                first = Job("tiktok", "TikTok", "Product Manager Graduate", "https://example.com/jobs/1")
+                second = Job("tiktok", "tiktok", "Marketing Graduate", "https://example.com/jobs/2")
+                other = Job("other", "TikTok Shop", "Product Graduate", "https://example.com/jobs/3")
+                with patch("apm_notifier.state.utc_now", return_value="2026-10-21T10:00:00+00:00"):
+                    store.record_jobs((first, other))
+                with patch("apm_notifier.state.utc_now", return_value="2026-10-21T10:01:00+00:00"):
+                    store.mark_notified(first)
+                with patch("apm_notifier.state.utc_now", return_value="2026-10-23T10:00:00+00:00"):
+                    store.record_jobs((first, second))
+
+                history = [dict(row) for row in store.history_rows("TIKTOK")]
+                self.assertEqual([row["url"] for row in history], [second.url, first.url])
+                self.assertEqual(history[0]["notified_at"], None)
+                self.assertEqual(history[1], {
+                    "title": first.title,
+                    "url": first.url,
+                    "company": "TikTok",
+                    "first_seen_at": "2026-10-21T10:00:00+00:00",
+                    "last_seen_at": "2026-10-23T10:00:00+00:00",
+                    "notified_at": "2026-10-21T10:01:00+00:00",
+                })
+                self.assertEqual(len(store.history_rows()), 3)
+                self.assertEqual(store.history_rows("Tik"), ())
+                self.assertEqual(store.history_rows("TikTok' OR 1=1 --"), ())
+            finally:
+                store.close()
+
+    def test_read_only_history_cannot_mutate_the_database(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "state.sqlite3"
+            store = StateStore(path)
+            store.record_jobs((Job("example", "Example", "APM", "https://example.com/jobs/1"),))
+            store.close()
+            before = path.read_bytes()
+            store = StateStore(path, read_only=True)
+            try:
+                self.assertEqual(len(store.history_rows()), 1)
+                with self.assertRaises(sqlite3.OperationalError):
+                    store.silence_pending()
+            finally:
+                store.close()
+            self.assertEqual(path.read_bytes(), before)
+
     def test_same_posting_with_changed_title_keeps_delivery_history(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             store = StateStore(Path(directory) / "state.sqlite3")

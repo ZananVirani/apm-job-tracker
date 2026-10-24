@@ -5,6 +5,7 @@ import getpass
 import json
 import logging
 from pathlib import Path
+import sqlite3
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -35,6 +36,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("test-notification", help="Send a sample phone notification")
     subparsers.add_parser("sources", help="List configured sources")
     subparsers.add_parser("status", help="Show persisted source health and alert counts")
+    history_parser = subparsers.add_parser("history", help="Read stored job and notification timestamps as JSON")
+    history_parser.add_argument("--company", default="", help="Filter by exact company name, ignoring case")
     return parser
 
 
@@ -152,8 +155,14 @@ def main(argv: list[str] | None = None) -> int:
                 print("; ".join(outcome.errors), file=sys.stderr)
             return 0 if outcome.delivered else 1
 
-        store = StateStore(Path(":memory:") if arguments.command == "check" else settings.state_path)
+        store = StateStore(
+            Path(":memory:") if arguments.command == "check" else settings.state_path,
+            read_only=arguments.command == "history",
+        )
         try:
+            if arguments.command == "history":
+                print(json.dumps([dict(row) for row in store.history_rows(arguments.company)], indent=2, ensure_ascii=False))
+                return 0
             if arguments.command == "status":
                 total, pending = store.job_counts()
                 print(f"Tracked matches: {total}; pending notifications: {pending}")
@@ -179,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
         finally:
             store.close()
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, sqlite3.Error) as error:
         print(f"Configuration error: {error}", file=sys.stderr)
         return 2
     return 0

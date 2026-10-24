@@ -45,13 +45,19 @@ CREATE TABLE IF NOT EXISTS source_health (
 
 
 class StateStore:
-    def __init__(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self.connection = sqlite3.connect(path)
+    def __init__(self, path: Path, read_only: bool = False) -> None:
+        if read_only:
+            if not path.is_file():
+                raise FileNotFoundError(f"Notification history does not exist: {path}")
+            self.connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self.connection = sqlite3.connect(path)
         self.connection.row_factory = sqlite3.Row
-        self.connection.executescript(SCHEMA)
-        self._migrate_schema()
-        self.connection.commit()
+        if not read_only:
+            self.connection.executescript(SCHEMA)
+            self._migrate_schema()
+            self.connection.commit()
 
     def _migrate_schema(self) -> None:
         """Add health fields to notification histories created by older versions."""
@@ -246,6 +252,19 @@ class StateStore:
                 """
             ).fetchall()
         )
+
+    def history_rows(self, company: str = "") -> tuple[sqlite3.Row, ...]:
+        """Return stored history; notified_at can also reflect a silenced baseline."""
+        query = """
+            SELECT title, url, company, first_seen_at, last_seen_at, notified_at
+            FROM jobs
+        """
+        parameters: tuple[str, ...] = ()
+        if company:
+            query += " WHERE company = ? COLLATE NOCASE"
+            parameters = (company,)
+        query += " ORDER BY first_seen_at DESC, company COLLATE NOCASE, title, url"
+        return tuple(self.connection.execute(query, parameters).fetchall())
 
     def job_counts(self) -> tuple[int, int]:
         row = self.connection.execute(
