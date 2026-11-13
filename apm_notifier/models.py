@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 from datetime import datetime, timezone
 import hashlib
 import re
@@ -55,12 +56,22 @@ class Source:
     request_method: str = "GET"
     request_bodies: tuple[str, ...] = ()
     verify_job_links: bool = False
-    verify_graduate_education: bool = False
-    include_adjacent_marketing: bool = False
-    include_growth_product_roles: bool = False
-    include_product_specialists: bool = True
     paginate: bool = False
     priority: bool = False
+    # Structured job-board adapter ("greenhouse", "lever", "workday", ...).
+    # Empty means the legacy URL list plus generic extraction is used.
+    ats: str = ""
+    ats_options: dict[str, Any] = field(default_factory=dict)
+    # "must" companies are scanned every run; "additional" ones on a slower cadence.
+    tier: str = "additional"
+    added_on: str = ""
+    discovered_via: str = ""
+    # Aggregators report postings from many employers rather than one company.
+    aggregator: bool = False
+
+    @property
+    def must_include(self) -> bool:
+        return self.tier == "must"
 
 
 @dataclass(frozen=True)
@@ -72,6 +83,22 @@ class Job:
     location: str = ""
     discovered_at: str = field(default_factory=utc_now)
     requirements: str = ""
+    # Richer fields supplied by structured adapters; all optional.
+    description: str = ""
+    req_id: str = ""
+    apply_url: str = ""
+    employment_type: str = ""
+    remote: bool | None = None
+    country_codes: tuple[str, ...] = ()
+    posted_date: str = ""
+    close_date: str = ""
+    term_hint: str = ""
+    sponsorship_hint: str = ""
+    detail_ref: str = ""
+
+    @property
+    def full_text(self) -> str:
+        return "\n".join(part for part in (self.description, self.requirements) if part)
 
     @property
     def role_key(self) -> tuple[str, str]:
@@ -103,7 +130,12 @@ class SourceResult:
     jobs: tuple[Job, ...]
     fetched_urls: int
     errors: tuple[str, ...] = ()
+    # Number of job records read before title filtering; zero across several
+    # successful runs usually means a broken adapter rather than a quiet company.
+    raw_count: int = -1
+    expected_urls: int = -1
 
     @property
     def succeeded(self) -> bool:
-        return self.fetched_urls == len(self.source.urls) and not self.errors
+        expected = self.expected_urls if self.expected_urls >= 0 else len(self.source.urls)
+        return self.fetched_urls >= expected and not self.errors

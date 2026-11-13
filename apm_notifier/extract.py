@@ -7,7 +7,7 @@ import re
 from typing import Any, Iterable
 from urllib.parse import unquote, urljoin, urlsplit
 
-from .filtering import RoleFilter
+from .filtering import RoleFilter, location_evidence
 from .models import Job, Source, normalize_space
 
 
@@ -156,13 +156,40 @@ def _walk_json(value: Any) -> Iterable[dict[str, Any]]:
             yield from _walk_json(child)
 
 
+def _has_location_evidence(value: str) -> bool:
+    evidence = location_evidence(value)
+    return bool(evidence.countries) or (evidence.remote and not evidence.foreign_only)
+
+
 def _matches_title(role_filter: RoleFilter, title: str, source: Source) -> bool:
-    return role_filter.matches(
-        title,
-        include_adjacent_marketing=source.include_adjacent_marketing,
-        include_growth_product_roles=source.include_growth_product_roles,
-        include_product_specialists=source.include_product_specialists,
-    )
+    return role_filter.matches(title)
+
+
+DESCRIPTION_KEYS = (
+    "description",
+    "job_description",
+    "jobDescription",
+    "descriptionPlain",
+    "content",
+    "basic_qualifications",
+    "preferred_qualifications",
+    "qualifications",
+    "responsibilities",
+)
+REQ_ID_KEYS = ("requisition_id", "requisitionId", "jobReqId", "id_icims", "job_id", "jobId", "displayJobId", "code")
+POSTED_KEYS = ("posted_date", "postedDate", "datePosted", "first_published", "publish_time", "releasedDate", "created_at")
+COUNTRY_CODE_KEYS = ("country_code", "countryCode", "country")
+
+
+def _text_fields(item: dict[str, Any], keys: Iterable[str]) -> str:
+    parts = []
+    for key in keys:
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            parts.append(value)
+        elif isinstance(value, list):
+            parts.extend(str(entry) for entry in value if isinstance(entry, str))
+    return "\n".join(parts)
 
 
 def _jobs_from_json(
@@ -190,7 +217,7 @@ def _jobs_from_json(
             if key in item and _location_text(item[key])
         ))
         # Workday cards may say "2 Locations" while the job URL names an office.
-        if not role_filter.matches_location(location, title) and "myworkdayjobs.com" in urlsplit(base_url).netloc:
+        if not _has_location_evidence(location) and "myworkdayjobs.com" in urlsplit(base_url).netloc:
             office = re.search(r"/job/([^/]+)/", url)
             if office:
                 location = "; ".join(filter(None, (location, unquote(office.group(1)).replace("-", " "))))
@@ -203,10 +230,18 @@ def _jobs_from_json(
                 country = _first_string(city_info, ("en_name", "i18n_name", "name"))
                 break
             city_info = city_info.get("parent")
-        if country and not role_filter.matches_location(country):
-            continue
-        if not role_filter.matches_location(location, title):
-            continue
+        if country and country.casefold() not in location.casefold():
+            location = "; ".join(filter(None, (location, country)))
+        country_codes = tuple(
+            code
+            for code in (
+                {"USA": "US", "CAN": "CA"}.get(str(item.get(key, "")).upper(), str(item.get(key, "")).upper())
+                for key in COUNTRY_CODE_KEYS
+                if isinstance(item.get(key), str) and len(str(item.get(key))) in {2, 3}
+            )
+            if code
+        )
+        requirement = item.get("requirement", "")
         jobs.append(
             Job(
                 source_id=source.id,
@@ -214,7 +249,11 @@ def _jobs_from_json(
                 title=title,
                 url=urljoin(base_url, url),
                 location=location,
-                requirements=item.get("requirement", "") if isinstance(item.get("requirement", ""), str) else "",
+                requirements=requirement if isinstance(requirement, str) else "",
+                description=_text_fields(item, DESCRIPTION_KEYS),
+                req_id=_first_string(item, REQ_ID_KEYS) or identifier,
+                posted_date=_first_string(item, POSTED_KEYS),
+                country_codes=country_codes,
             )
         )
     return jobs
@@ -248,8 +287,6 @@ def _jobs_from_markdown(text: str, source: Source, role_filter: RoleFilter) -> l
         clean_title = _plain_markdown(title)
         clean_location = _plain_markdown(location)
         if not link or not _matches_title(role_filter, clean_title, source):
-            continue
-        if not role_filter.matches_location(clean_location, clean_title):
             continue
         jobs.append(
             Job(
@@ -312,8 +349,6 @@ def _jobs_from_community_tables(text: str, source: Source, role_filter: RoleFilt
         links = cells[3][1]
         if not company or "🔒" in cells[3][0] or not links or not _matches_title(role_filter, title, source):
             continue
-        if not role_filter.matches_location(location, title):
-            continue
         # The first application link is the employer link; strip tracker-only ref.
         parts = urlsplit(links[0])
         query = [(k, v) for k, v in parse_qsl(parts.query) if not (k == "ref" and v == "Simplify")]
@@ -347,7 +382,8 @@ ZERO_RESULT_MARKERS = (
     "0 results",
 )
 JOB_DETAIL_HREF = re.compile(
-    r"/(?:profile/job_details|(?:careers/)?(?:job|jobs|details|position|positions|jobdetail))/(?:results/)?[^/?#\"']+",
+    r"/(?:profile/job_details|(?:careers/)?(?:job|jobs|details|position|positions|jobdetail))/(?:results/)?[^/?#\"']+|"
+    r"/careers/[a-z0-9-]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
     re.IGNORECASE,
 )
 NUMERIC_SEARCH_HREF = re.compile(r"/search/\d{6,}", re.IGNORECASE)
@@ -533,7 +569,7 @@ def _jobs_from_linkedin_cards(
         )
         for title, location, href in parser.cards
         if _matches_title(role_filter, title, source)
-        and role_filter.matches_location(location, title)
+       
     ]
 
 
@@ -655,7 +691,7 @@ def _jobs_from_yc_cards(
         )
         for company, title, location, href in parser.cards
         if _matches_title(role_filter, title, source)
-        and role_filter.matches_location(location, title)
+       
     ]
 
 
@@ -722,7 +758,7 @@ def _jobs_from_meta_cards(
         )
         for title, location, href in parser.cards
         if _matches_title(role_filter, title, source)
-        and role_filter.matches_location(location, title)
+       
     ]
 
 
@@ -783,7 +819,7 @@ def _jobs_from_tiktok_cards(
         )
         for title, location, href in parser.cards
         if _matches_title(role_filter, title, source)
-        and role_filter.matches_location(location, title)
+       
     ]
 
 
@@ -859,7 +895,7 @@ def _jobs_from_walmart_cards(
     jobs: list[Job] = []
     for identifier, title, spans in parser.cards:
         location = next(
-            (value for value in spans if role_filter.matches_location(value, title)),
+            (value for value in spans if _has_location_evidence(value)),
             "",
         )
         if not _matches_title(role_filter, title, source) or not location:
@@ -904,8 +940,6 @@ def _jobs_from_google_init_data(
                         locations.append(location)
         location_text = "; ".join(dict.fromkeys(locations))[:300]
         if not identifier.isdigit() or not _matches_title(role_filter, title, source):
-            continue
-        if not role_filter.matches_location(location_text, title):
             continue
         jobs.append(
             Job(
@@ -991,7 +1025,7 @@ def _jobs_from_ea_cards(
         )
         for title, location, href in parser.cards
         if _matches_title(role_filter, title, source)
-        and role_filter.matches_location(location, title)
+       
     ]
 
 
@@ -1081,9 +1115,7 @@ def _jobs_from_shopify_router(
         raw_url = _first_string(posting, ("externalLink", "applyLink"))
         if not title or not raw_url:
             continue
-        if not _matches_title(role_filter, title, source) or not role_filter.matches_location(
-            location, title
-        ):
+        if not _matches_title(role_filter, title, source):
             continue
         jobs.append(
             Job(
@@ -1173,7 +1205,7 @@ def extract_jobs(
             jobs.extend(
                 Job(source.id, source.name, title, urljoin(base_url, href), location)
                 for title, location, href in cards.cards
-                if _matches_title(role_filter, title, source) and role_filter.matches_location(location, title)
+                if _matches_title(role_filter, title, source)
             )
         parser = CareerHTMLParser()
         parser.feed(text)
@@ -1188,6 +1220,10 @@ def extract_jobs(
                 continue
             if "disneycareers.com" in base_url and "/job/" in href:
                 continue
+            if "google.com/about/careers/applications/jobs/results" in base_url and "jobs/results/" in href:
+                continue  # Parsed with locations from Google's embedded result data above.
+            if "workatastartup.com" in base_url and "/jobs/" in href:
+                continue  # YC cards are parsed with their employer name and location above.
             title = label
             location = ""
             if "apply.careers.microsoft.com" in base_url and "/careers/job/" in href:
@@ -1195,9 +1231,7 @@ def extract_jobs(
                 if microsoft_match:
                     title = normalize_space(microsoft_match.group("title"))
                     location = normalize_space(microsoft_match.group("location"))
-            if _matches_title(role_filter, title, source) and role_filter.matches_location(
-                location, title
-            ):
+            if _matches_title(role_filter, title, source):
                 jobs.append(
                     Job(
                         source_id=source.id,

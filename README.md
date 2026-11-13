@@ -1,38 +1,38 @@
 # APM Notifier
 
-APM Notifier watches official company career searches and sends a one-time phone alert when it finds a new:
+APM Notifier watches company career sites for **Summer 2027 product-management internships and adjacent roles**, classifies every candidate posting against strict eligibility rules, and sends a Telegram/ntfy digest of new **ACCEPT** and **REVIEW** postings.
 
-- Associate, Rotational, Apprentice, Junior, Entry-Level, or Early-Career Product Manager / Product Owner / Product Builder roles
-- Bachelor-eligible Graduate or New Grad Product Manager, Product Strategy, Product Operations, Product Solutions, and Product Marketing roles
-- Non-senior Product Management specialist, analyst, and coordinator roles across monitored companies
-- Product Manager / Product Management internship or co-op
-- Technical or Growth Product Manager internship
-- Non-senior Growth Product Manager roles at Anthropic and OpenAI
-- Product Marketing or Product Marketing Manager internship
-- Summer marketing internships and junior marketing associate/analyst/specialist/coordinator roles; graduate campaign, advertising, growth, and account roles
-  at the requested companies
+## What it looks for
 
-The configuration monitors 53 career feeds and job-network targets, including Revolut, Figma, Questrade, Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate [new-grad community tracker](https://github.com/SimplifyJobs/New-Grad-Positions), with live employer-link verification, and the US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) are monitored as independent back-checks, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
+- **Core titles (high priority):** Product Manager / Product Management / PM / APM / AI / Technical Product Manager intern or co-op.
+- **Adjacent titles (accepted):** Product Analyst, Owner, Coordinator, Associate, Operations, Strategy, Marketing, Specialist, Growth; Program / Technical Program Manager; Digital Operations / Product / Strategy / Transformation; Strategy & Operations; Innovation / Venture; Technology or AI Strategy. Product Engineer, Product Builder, Forward-Deployed/Solutions, Project Manager, Business Analyst and Customer Insights titles are accepted only when the description is product-oriented.
+- **Any other intern title** is judged on its description (roadmaps, PRDs/specs, backlog prioritization, discovery, engineering + design partnership, product metrics). Pure software, data science/ML, UX design, sales, accounting/audit, HR, legal and admin roles are rejected.
 
-## What it does
+## Eligibility rules (applied in order; the first REJECT wins)
 
-- Checks the configured career searches every five minutes by default.
-- Scans every result page for configured Workday, Dayforce, LinkedIn, and Disney feeds; resolves anonymous Dayforce search sessions.
-- Scans TikTok's official public API across the entire campus feed plus an unrestricted graduate search, with all result pages and no upstream city or job-function exclusions. Local role, year, country, and education filters then select relevant openings.
-- Starts TikTok first and sends its new matches as soon as its scan finishes, without waiting for slower company feeds. Qualifications come directly from the API to avoid extra page fetches.
-- Uses employer-published LinkedIn feeds for Revolut, Uber, and HubSpot where direct feeds are blocked or retired.
-- Keeps distinct postings with the same title separate and reads all provided locations before filtering.
-- Accepts titles mentioning 2027 or no year and rejects explicitly older-year titles.
-- Rejects non-summer internships, while allowing full-time graduate cohorts that start in fall, winter, or spring.
-- Only alerts for roles with a recognizable US, Canadian, or UK location. Ambiguous `Remote` or missing locations are excluded.
-- Checks official qualifications for graduate matches from configured sources and excludes roles that explicitly require a master's, MBA, or PhD while retaining bachelor's-eligible alternatives.
-- Treats non-senior Growth Product Manager titles at Anthropic and OpenAI as eligible even when they are not labeled as internships or graduate roles; preferred experience language does not suppress them.
-- Stores a fingerprint for every match in SQLite, so a role alerts only once.
-- Retries temporary HTTP failures and checks sources concurrently.
-- Uses headless Chromium only for the few JavaScript-only searches; official JSON/HTML stays on the faster path.
-- Rejects empty JavaScript career shells instead of counting them as healthy job feeds.
-- Warns after TikTok cannot be fully checked for 15 minutes; other source warnings wait six hours. Repeated outage warnings remain limited to weekly.
-- Keeps undelivered roles pending if your phone notification provider is temporarily down.
+1. **Internship, co-op or student programme.** Full-time, new-grad, contract and part-time-during-school roles are rejected. Terms must start May–Aug 2027 (4-month summers and 8/12/16-month terms starting then); Fall 2027+, Winter 2027 and 2026 starts are rejected, and "Spring 2027" or April starts go to REVIEW.
+2. **Education:** must accept undergraduates. MBA/Master's/PhD-only postings are rejected; "Bachelor's or Master's" is accepted.
+3. **Graduation year (April 2028):** accepted for 2028-or-later, returning-to-school, penultimate-year or rising-junior/senior language, or no stated year; rejected for 2026/2027-only, final-year or recent-graduate requirements; ambiguous wording goes to REVIEW.
+4. **Location:** any Canadian location (GTA flagged as priority; Waterloo Region noted); US roles only if remote or sponsorship/CPT/OPT is supported. US roles that deny sponsorship or require citizenship/clearance are rejected; US onsite roles silent on sponsorship go to REVIEW. Everywhere else is rejected. Canadian work-authorization requirements are recorded.
+5. **Open postings only:** closed postings and past application deadlines are rejected.
+
+Every decision stores a one-line reason and the exact quoted text that triggered it. Rejected postings stay in SQLite so false negatives can be audited.
+
+## Coverage
+
+`config/sources.json` holds 25 must-include companies (scanned every run) and about 110 additional companies (scanned at most hourly). Structured adapters read official public job-board APIs — Greenhouse, Lever, Ashby, SmartRecruiters, Workday CxS (with automatic Canada/US and intern facet discovery), SAP SuccessFactors RSS, Microsoft and Eightfold — and fetch the full description for each candidate. A few sites still use the legacy HTML/JSON extractors. The Simplify Summer 2027 list and a community tracker act as secondary discovery sources; employers found only there are added to a company registry.
+
+Disabled entries document companies whose careers sites could not be read politely (no public board, login or bot walls, robots.txt). `python3 -m apm_notifier report` shows which companies have zero matching postings versus failing adapters.
+
+## How it behaves
+
+- Must-include companies are checked on every run (every five minutes in the cloud); additional companies at most every `ADDITIONAL_SCAN_MINUTES`.
+- Requests identify themselves with a descriptive User-Agent, are spaced at least `HOST_INTERVAL_SECONDS` apart per host (3s for LinkedIn and Microsoft), retry with exponential backoff, and check robots.txt before fetching any HTML job page. Logins, CAPTCHAs and paywalls are never bypassed.
+- Descriptions are cached in SQLite and refreshed every `DESCRIPTION_REFRESH_HOURS`; at most `MAX_DESCRIPTION_FETCHES` are fetched per run and the rest are picked up next run.
+- Postings are deduplicated by company + requisition id, then canonical URL, then company + title + location, so reposts and aggregator copies do not re-alert.
+- Alerts are sent for new ACCEPT/REVIEW postings and for status changes (REVIEW → ACCEPT, closed, reopened). The digest is sorted by must-include company, core title, GTA, then newest.
+- Each run writes `job_matches.csv` and `job_matches.json` (all open ACCEPT/REVIEW postings with the full schema), logs a per-run summary, and warns when an adapter returns zero postings for `ZERO_RESULT_WARN_RUNS` runs in a row.
+- TikTok's campus feed still runs first and its digest is sent as soon as it finishes.
 
 ## Quick start with Docker
 
@@ -110,56 +110,49 @@ Your computer must remain awake and connected. For genuine 24/7 coverage, run th
 
 ## Free cloud monitoring with GitHub Actions
 
-Cloudflare dispatches the included `.github/workflows/monitor.yml` every five minutes, while GitHub's own schedule provides an hourly backup. The repository may be public, but `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` must be stored as encrypted repository secrets under **Settings → Secrets and variables → Actions**. Never commit `.env`.
+A free Cloudflare Worker ([`dispatcher/`](dispatcher/)) dispatches the included `.github/workflows/monitor.yml` every five minutes, while GitHub's own schedule provides an hourly backup. Deploy it with `npx wrangler deploy` from `dispatcher/` after setting `GITHUB_OWNER`/`GITHUB_REPO` in `wrangler.toml` and storing a fine-grained token (this repository only, **Actions: Read and write**) with `npx wrangler secret put GITHUB_TOKEN`. The repository may be public, but `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` must be stored as encrypted repository secrets under **Settings → Secrets and variables → Actions**. Never commit `.env`.
 
 The five-minute dispatch cadence is a target, not an instant-alert guarantee: runner queues, previous scans, provider rate limits, and the time before a job appears in TikTok's feed can delay detection. TikTok notifications no longer wait for the full multi-company scan once the job starts.
 
-The workflow restores and saves the SQLite notification history through the Actions cache. Existing notification history is restored before every check. If history is missing, current matches are sent so a lost cache cannot silently suppress opportunities. Public-repository scheduled workflows may be disabled after 60 days without repository activity and should be checked periodically.
+The workflow restores and saves the SQLite notification history through the Actions cache. Existing notification history is restored before every check. If history is missing, current matches are sent so a lost cache cannot silently suppress opportunities. Each run uploads `job_matches.csv` and `job_matches.json` as the **job-matches** workflow artifact (kept for three days). Public-repository scheduled workflows may be disabled after 60 days without repository activity and should be checked periodically.
 
 ## Useful commands
 
 ```bash
-# One real check: persists results and sends any pending alerts
+# One real check: persists results and sends any pending digest
 python3 -m apm_notifier run --once
 
-# Continuous check every two minutes
-python3 -m apm_notifier run --interval 120
-
-# Read-only live preview
+# Read-only live dry run with decisions, reasons and quotes (add --all for REJECTs)
 python3 -m apm_notifier check
+python3 -m apm_notifier check --all --source td --source bree
 
-# Source health and notification backlog
+# Watchlist health: zero matching postings vs adapter failures, plus discovered companies
+python3 -m apm_notifier report
+
+# Rewrite job_matches.csv / job_matches.json from stored state
+python3 -m apm_notifier export
+
+# Source health and decision counts
 python3 -m apm_notifier status
 
-# Read stored discovery and notification timestamps without modifying history
+# Stored postings with discovery and notification timestamps
 python3 -m apm_notifier history --company TikTok
-
-# Show all configured companies
-python3 -m apm_notifier sources
 
 # Run automated tests
 python3 -m unittest discover -s tests -v
 ```
 
-The cloud workflow's optional **show_tiktok_history** input runs a read-only audit independently of the full monitoring scan. It prints restored TikTok history, skips notification delivery, and preserves the cloud cache. `notified_at` is the stored notification timestamp; older silent baselines can also populate it, so corroborate a disputed historical delivery with the corresponding run's `Alert delivered` log. LinkedIn alert dates do not establish when an employer first published a job.
-
 ## Customize the targets
 
-Edit [`config/sources.json`](config/sources.json). Each source needs a stable `id`, display `name`, official `career_url`, and one or more searchable `urls`.
+Edit [`config/sources.json`](config/sources.json). Structured sources need only one line of adapter options:
 
 ```json
-{
-  "id": "example",
-  "name": "Example Company",
-  "career_url": "https://example.com/careers",
-  "urls": [
-    "https://example.com/careers?query=product%20manager%20intern",
-    "https://example.com/careers?query=product%20marketing%20intern"
-  ]
-}
+{"id": "bree", "name": "Bree", "tier": "must", "ats": "ashby", "board": "bree"}
+{"id": "td", "name": "TD Bank Group", "ats": "workday", "host": "td.wd3.myworkdayjobs.com", "tenant": "td", "site": "TD_Bank_Careers"}
+{"id": "telus", "name": "TELUS", "ats": "successfactors", "host": "careers.telus.com"}
 ```
 
-The extractor reads normal job links, JSON job APIs, JSON-LD `JobPosting` data, and embedded application state used by many JavaScript career sites. Career providers change their markup occasionally; the persisted `status` report and throttled phone health warning make those changes visible.
+Supported `ats` values: `greenhouse`, `lever`, `ashby`, `smartrecruiters` (`board`), `workday` (`host`, `tenant`, `site`), `successfactors` (`host`), `microsoft`, `eightfold` (`host`, `domain`), `atlassian` and `simplify` (`listings_url`). Optional `queries` override the default intern keywords. Sources without `ats` use a list of `urls` and the generic extractor. `tier` is `must` or `additional`; set `enabled: false` with a `note` to document a company that cannot be scanned.
 
 ## First-run behavior
 
@@ -167,6 +160,6 @@ The extractor reads normal job links, JSON job APIs, JSON-LD `JobPosting` data, 
 
 Deleting the SQLite state intentionally resets deduplication and may alert for every currently matching job again.
 
-## Location filtering
+## Location rules
 
-`ALLOWED_COUNTRIES=US,CA,UK` is the default. A posting must identify at least one allowed country, constituent region, province/state, or recognizable city. Multi-location roles qualify when at least one listed location is allowed. Generic `Remote`, worldwide, and missing-location postings are rejected because their eligibility cannot be confirmed.
+Canada is always eligible. US postings are eligible when remote or when the posting supports visa sponsorship, CPT or OPT; onsite US postings that say nothing about sponsorship are sent as REVIEW. Every other country is rejected. Location evidence comes from the listing, the job board's country codes, and the description.

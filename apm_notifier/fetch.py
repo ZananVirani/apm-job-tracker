@@ -14,19 +14,21 @@ import time
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPCookieProcessor, HTTPSHandler, Request, build_opener, urlopen
 from urllib.parse import urlsplit
+from urllib.robotparser import RobotFileParser
 
 from .models import FetchResult
 
 
+USER_AGENT = "apm-notifier/0.3 (personal internship alert bot; polite, respects robots.txt)"
 DEFAULT_HEADERS = {
     "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.8",
     "Cache-Control": "no-cache",
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-    ),
+    "User-Agent": USER_AGENT,
 }
+# Minimum spacing between requests to one host; LinkedIn's guest feed is stricter.
+DEFAULT_HOST_INTERVAL_SECONDS = 1.0
+SLOW_HOSTS = {"linkedin.com": 3.0, "apply.careers.microsoft.com": 3.0}
 BLOCK_MARKERS = (
     "access denied",
     "attention required! | cloudflare",
@@ -57,12 +59,20 @@ def trusted_ssl_context() -> ssl.SSLContext:
 
 
 class HttpClient:
-    def __init__(self, timeout_seconds: int, attempts: int = 2) -> None:
+    def __init__(
+        self,
+        timeout_seconds: int,
+        attempts: int = 3,
+        host_interval_seconds: float = DEFAULT_HOST_INTERVAL_SECONDS,
+    ) -> None:
         self.timeout_seconds = timeout_seconds
         self.attempts = attempts
+        self.host_interval_seconds = host_interval_seconds
         self.ssl_context = trusted_ssl_context()
-        self._linkedin_lock = threading.Lock()
-        self._linkedin_next_request = 0.0
+        self._pace_lock = threading.Lock()
+        self._next_request: dict[str, float] = {}
+        self._robots: dict[str, RobotFileParser | None] = {}
+        self._robots_lock = threading.Lock()
 
     def fetch(
         self,
@@ -77,7 +87,7 @@ class HttpClient:
         last_error: Exception | None = None
         for attempt in range(self.attempts):
             try:
-                self._pace_linkedin(url)
+                self._pace(url)
                 request = Request(url, data=encoded_body, headers=headers, method=method)
                 with self._open_request(request) as response:
                     response_body = response.read()
@@ -96,8 +106,9 @@ class HttpClient:
                 if error.code not in {408, 425, 429, 500, 502, 503, 504}:
                     break
                 retry_after = error.headers.get("Retry-After", "")
-                delay = int(retry_after) if retry_after.isdigit() else 1.5 * (attempt + 1)
-                time.sleep(min(delay, 10) + random.random() / 4)
+                delay = int(retry_after) if retry_after.isdigit() else 1.5 * (2 ** attempt)
+                if attempt + 1 < self.attempts:
+                    time.sleep(min(delay, 20) + random.random() / 4)
             except (
                 TimeoutError,
                 URLError,
@@ -115,20 +126,45 @@ class HttpClient:
                     except FetchError as curl_error:
                         last_error = curl_error
                 if attempt + 1 < self.attempts:
-                    time.sleep(1.5 * (attempt + 1) + random.random() / 4)
+                    time.sleep(1.5 * (2 ** attempt) + random.random() / 4)
         detail = str(last_error) if last_error else "unknown fetch error"
         raise FetchError(f"{url}: {detail}") from last_error
 
-    def _pace_linkedin(self, url: str) -> None:
-        """Share one request budget across employer feeds and retries."""
-        host = urlsplit(url).hostname or ""
-        if host != "linkedin.com" and not host.endswith(".linkedin.com"):
+    def _pace(self, url: str) -> None:
+        """Space requests to each host so concurrent sources stay polite."""
+        host = (urlsplit(url).hostname or "").casefold()
+        interval = self.host_interval_seconds
+        for slow_host, slow_interval in SLOW_HOSTS.items():
+            if host == slow_host or host.endswith("." + slow_host):
+                interval = max(interval, slow_interval)
+                host = slow_host
+        if interval <= 0:
             return
-        with self._linkedin_lock:
-            delay = self._linkedin_next_request - time.monotonic()
-            if delay > 0:
-                time.sleep(delay)
-            self._linkedin_next_request = time.monotonic() + 3.0
+        while True:
+            with self._pace_lock:
+                now = time.monotonic()
+                ready_at = self._next_request.get(host, 0.0)
+                if ready_at <= now:
+                    self._next_request[host] = now + interval
+                    return
+                delay = ready_at - now
+            time.sleep(delay)
+
+    def allowed_by_robots(self, url: str) -> bool:
+        """Check robots.txt before fetching an HTML job page that is not an official API."""
+        parts = urlsplit(url)
+        origin = f"{parts.scheme}://{parts.netloc}"
+        with self._robots_lock:
+            if origin not in self._robots:
+                parser: RobotFileParser | None = RobotFileParser()
+                try:
+                    response = self.fetch(f"{origin}/robots.txt", {"Accept": "text/plain"})
+                    parser.parse(response.text.splitlines())
+                except Exception:
+                    parser = None  # Missing or unreadable robots.txt imposes no restriction.
+                self._robots[origin] = parser
+            parser = self._robots[origin]
+        return parser is None or parser.can_fetch(USER_AGENT, url)
 
     def _open_request(self, request: Request):
         """Dayforce's anonymous search needs its normal CSRF token and session cookie."""

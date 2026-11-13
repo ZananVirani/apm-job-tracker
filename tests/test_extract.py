@@ -16,7 +16,7 @@ class ExtractJobsTests(unittest.TestCase):
         <h2>Associate Product Manager</h2><span class="job-brand">Disney</span>
         <span class="job-location">Orlando, Florida</span><span class="job-date-posted">Oct. 8, 2026</span></a></li></ul>'''
         source = Source("disney", "Disney", ("https://www.disneycareers.com/en/search-jobs/product",), "https://www.disneycareers.com")
-        jobs = extract_jobs(html, "text/html", source, source.urls[0], RoleFilter(2027, (2026,)))
+        jobs = extract_jobs(html, "text/html", source, source.urls[0], RoleFilter(2027))
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0].title, "Associate Product Manager")
 
@@ -27,7 +27,7 @@ class ExtractJobsTests(unittest.TestCase):
         <tr><td>Closed</td><td>Associate Product Manager</td><td>Toronto</td><td>🔒</td></tr></table>'''
         source = Source("newgrad-community-backcheck", "Tracker", ("https://example.com/list",), "https://example.com/list")
         self.assertTrue(response_has_job_signal(html, "text/plain"))
-        jobs = extract_jobs(html, "text/plain", source, source.urls[0], RoleFilter(2027, (2026,)))
+        jobs = extract_jobs(html, "text/plain", source, source.urls[0], RoleFilter(2027))
         self.assertEqual(len(jobs), 2)
         self.assertEqual([j.company for j in jobs], ["Example", "Example"])
         self.assertNotIn("ref=Simplify", jobs[0].url)
@@ -38,7 +38,7 @@ class ExtractJobsTests(unittest.TestCase):
             {"title": "Graduate Product Owner", "externalPath": "/job/London-England/owner_1", "locationsText": "2 Locations"},
             {"title": "Associate Product Manager", "externalPath": "/job/Singapore/pm_2", "location": "Singapore", "jobLocation": {"address": {"addressLocality": "Small Town", "addressCountry": "GB"}}},
         ]}
-        jobs = extract_jobs(json.dumps(payload), "application/json", source, source.urls[0], RoleFilter(2027, (2026,)))
+        jobs = extract_jobs(json.dumps(payload), "application/json", source, source.urls[0], RoleFilter(2027))
         self.assertEqual(len(jobs), 2)
         self.assertIn("London", jobs[0].location)
         self.assertIn("GB", jobs[1].location)
@@ -53,7 +53,7 @@ class ExtractJobsTests(unittest.TestCase):
             "jobPostingId": 17940, "jobReqId": 4309, "jobTitle": "Associate Product Manager",
             "postingLocations": [{"formattedAddress": "Toronto, ON, Canada"}, {"formattedAddress": "North York, ON, Canada"}],
         }], "maxCount": 1}
-        jobs = extract_jobs(json.dumps(payload), "application/json", source, source.urls[0], RoleFilter(2027, (2026,)))
+        jobs = extract_jobs(json.dumps(payload), "application/json", source, source.urls[0], RoleFilter(2027))
         self.assertEqual(len(jobs), 1)
         self.assertTrue(jobs[0].url.endswith("/jobs/17940"))
         self.assertIn("North York", jobs[0].location)
@@ -65,7 +65,7 @@ class ExtractJobsTests(unittest.TestCase):
             urls=("https://jobs.example.com/search",),
             career_url="https://jobs.example.com/",
         )
-        self.filter = RoleFilter(2027, (2024, 2025, 2026))
+        self.filter = RoleFilter(2027)
 
     def test_extracts_matching_anchor_only(self) -> None:
         html = """
@@ -100,13 +100,12 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertIn("Toronto", jobs[0].location)
         self.assertEqual(jobs[0].url, "https://jobs.example.com/jobs/pm-7")
 
-    def test_extracts_opted_in_adjacent_marketing_role(self) -> None:
+    def test_extracts_product_marketing_intern_but_not_generic_marketing_role(self) -> None:
         source = Source(
             id="mastercard",
             name="Mastercard",
             urls=("https://careers.example.com/search",),
             career_url="https://careers.example.com/",
-            include_adjacent_marketing=True,
         )
         payload = {
             "jobs": [
@@ -114,7 +113,14 @@ class ExtractJobsTests(unittest.TestCase):
                     "title": "Partner Marketing Specialist",
                     "applyUrl": "https://careers.example.com/jobs/R-288655",
                     "location": "Toronto, Ontario, Canada",
-                }
+                },
+                {
+                    "title": "Product Marketing Intern",
+                    "applyUrl": "https://careers.example.com/jobs/R-288656",
+                    "location": "Toronto, Ontario, Canada",
+                    "description": "Support go-to-market launches for new features.",
+                    "requisitionId": "R-288656",
+                },
             ]
         }
         jobs = extract_jobs(
@@ -125,7 +131,9 @@ class ExtractJobsTests(unittest.TestCase):
             self.filter,
         )
         self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0].title, "Partner Marketing Specialist")
+        self.assertEqual(jobs[0].title, "Product Marketing Intern")
+        self.assertEqual(jobs[0].req_id, "R-288656")
+        self.assertIn("go-to-market", jobs[0].description)
 
     def test_extracts_ashby_embedded_job_board(self) -> None:
         source = Source(
@@ -134,7 +142,6 @@ class ExtractJobsTests(unittest.TestCase):
             urls=("https://jobs.ashbyhq.com/Lime?embed=js",),
             career_url="https://www.li.me/about/careers",
             url_template="https://jobs.ashbyhq.com/Lime/{id}",
-            include_adjacent_marketing=True,
         )
         html = """
         <script>
@@ -214,7 +221,7 @@ class ExtractJobsTests(unittest.TestCase):
             "https://apply.careers.microsoft.com/careers/job/1970393556953113",
         )
 
-    def test_rejects_matching_job_outside_allowed_countries(self) -> None:
+    def test_keeps_foreign_roles_for_the_classifier_to_reject(self) -> None:
         payload = {
             "results": [
                 {
@@ -236,7 +243,11 @@ class ExtractJobsTests(unittest.TestCase):
             "https://jobs.example.com/api/search",
             self.filter,
         )
-        self.assertEqual([job.url for job in jobs], ["https://jobs.example.com/jobs/canada"])
+        # Location eligibility is decided (and audited) by the classifier, not the extractor.
+        self.assertEqual(
+            sorted(job.url for job in jobs),
+            ["https://jobs.example.com/jobs/canada", "https://jobs.example.com/jobs/singapore"],
+        )
 
     def test_extracts_json_ld_job_posting(self) -> None:
         payload = {
@@ -338,9 +349,14 @@ class ExtractJobsTests(unittest.TestCase):
         | Other | Software Engineer Intern | Seattle, WA | [apply](https://example.com/swe) | - |
         """
         jobs = extract_jobs(markdown, "text/plain", self.source, self.source.career_url, self.filter)
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0].company, "Databricks")
-        self.assertEqual(jobs[0].url, "https://example.com/db")
+        by_company = {job.company: job for job in jobs}
+        # Closed (🔒) rows are skipped; every open intern row is kept for classification.
+        self.assertEqual(set(by_company), {"Databricks", "Other"})
+        self.assertEqual(by_company["Databricks"].url, "https://example.com/db")
+
+    def test_shopify_careers_links_are_job_signals(self) -> None:
+        html = '<a href="/careers/product-manager-intern_62d779d3-51c8-4b0a-ab2e-1a440276bb37">Product Manager Intern Remote - Americas</a>'
+        self.assertTrue(response_has_job_signal(html, "text/html"))
 
     def test_job_signal_rejects_empty_spa_shell(self) -> None:
         self.assertFalse(response_has_job_signal("<html><a href='/careers'>Careers</a></html>", "text/html"))
@@ -516,16 +532,15 @@ class ExtractJobsTests(unittest.TestCase):
             name="LinkedIn",
             urls=("https://www.linkedin.com/jobs-guest/jobs/api/search",),
             career_url="https://careers.linkedin.com/",
-            include_adjacent_marketing=True,
         )
         html = """
         <li>
           <div class="base-search-card base-search-card--link job-search-card">
-            <a class="base-card__full-link" href="https://www.linkedin.com/jobs/view/marketing-analyst-at-linkedin-445?position=1&amp;trackingId=abc">
-              <span class="sr-only">Marketing Analyst — 2027</span>
+            <a class="base-card__full-link" href="https://www.linkedin.com/jobs/view/product-analyst-intern-at-linkedin-445?position=1&amp;trackingId=abc">
+              <span class="sr-only">Product Analyst Intern — 2027</span>
             </a>
             <div class="base-search-card__info">
-              <h3 class="base-search-card__title">Marketing Analyst — 2027</h3>
+              <h3 class="base-search-card__title">Product Analyst Intern — 2027</h3>
               <div class="base-search-card__metadata">
                 <span class="job-search-card__location">Toronto, Ontario, Canada</span>
               </div>
@@ -545,7 +560,7 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertEqual(jobs[0].location, "Toronto, Ontario, Canada")
         self.assertEqual(
             jobs[0].url,
-            "https://www.linkedin.com/jobs/view/marketing-analyst-at-linkedin-445",
+            "https://www.linkedin.com/jobs/view/product-analyst-intern-at-linkedin-445",
         )
 
     def test_extracts_snap_nested_job_api(self) -> None:
@@ -554,7 +569,6 @@ class ExtractJobsTests(unittest.TestCase):
             name="Snap",
             urls=("https://careers.snap.com/api/jobs",),
             career_url="https://careers.snap.com/jobs",
-            include_adjacent_marketing=True,
         )
         payload = {
             "body": [

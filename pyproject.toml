@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "apm-notifier"
 version = "0.1.0"
-description = "Instant alerts for APM, product manager intern, and product marketing intern openings"
+description = "Alerts for Summer 2027 product-management internships, classified against strict eligibility rules"
 requires-python = ">=3.11"
 dependencies = []
 

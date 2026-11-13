@@ -8,7 +8,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from .fetch import trusted_ssl_context
-from .models import Job, SourceResult
+from .models import SourceResult
 
 
 def _health_error_summary(errors: tuple[str, ...]) -> str:
@@ -28,6 +28,79 @@ def _health_error_summary(errors: tuple[str, ...]) -> str:
         if summary and summary not in summaries:
             summaries.append(summary)
     return "; ".join(summaries)[:400] or "Unknown career-feed error"
+
+
+@dataclass(frozen=True)
+class DigestEntry:
+    posting_id: int
+    company: str
+    title: str
+    location: str
+    term: str
+    decision: str
+    reason: str
+    url: str
+    event: str = "new"
+    must_include: bool = False
+    core_title: bool = False
+    gta: bool = False
+    newest: str = ""
+
+    @property
+    def tags(self) -> list[str]:
+        tags: list[str] = []
+        if self.must_include:
+            tags.append("MUST-INCLUDE")
+        if self.core_title:
+            tags.append("core title")
+        if self.gta:
+            tags.append("GTA")
+        return tags
+
+
+DECISION_ICONS = {"ACCEPT": "✅", "REVIEW": "🟡", "REJECT": "⛔"}
+TELEGRAM_LIMIT = 3800
+
+
+def sort_digest(entries: list[DigestEntry]) -> list[DigestEntry]:
+    """Order by must-include company > core title > GTA > newest."""
+    newest_first = sorted(entries, key=lambda entry: entry.newest, reverse=True)
+    return sorted(newest_first, key=lambda entry: (not entry.must_include, not entry.core_title, not entry.gta))
+
+
+def format_entry_html(entry: DigestEntry) -> str:
+    event = "" if entry.event == "new" else f"🔁 <i>{escape(entry.event)}</i>\n"
+    tags = f" · {escape(' · '.join(entry.tags))}" if entry.tags else ""
+    details = " · ".join(filter(None, (entry.location, entry.term)))
+    return (
+        f"{event}{DECISION_ICONS.get(entry.decision, '')} <b>{escape(entry.decision)}</b>{tags}\n"
+        f"<b>{escape(entry.company)}</b> — {escape(entry.title)}\n"
+        + (f"📍 {escape(details)}\n" if details else "")
+        + (f"💬 {escape(entry.reason)}\n" if entry.reason else "")
+        + f'<a href="{escape(entry.url, quote=True)}">Apply</a>'
+    )
+
+
+def format_entry_plain(entry: DigestEntry) -> str:
+    event = "" if entry.event == "new" else f"[{entry.event}] "
+    tags = f" [{', '.join(entry.tags)}]" if entry.tags else ""
+    details = " | ".join(filter(None, (entry.location, entry.term)))
+    return f"{event}{entry.decision}{tags}: {entry.company} - {entry.title}\n{details}\n{entry.reason}\n{entry.url}"
+
+
+def chunk_messages(header: str, blocks: list[str], limit: int = TELEGRAM_LIMIT) -> list[str]:
+    messages: list[str] = []
+    current = header
+    for block in blocks:
+        candidate = f"{current}\n\n{block}" if current else block
+        if len(candidate) > limit and current and current != header:
+            messages.append(current)
+            current = block
+        else:
+            current = candidate
+    if current:
+        messages.append(current)
+    return messages
 
 
 @dataclass(frozen=True)
@@ -61,18 +134,33 @@ class NotificationManager:
             channels.append("ntfy")
         return tuple(channels)
 
-    def send_job(self, job: Job) -> NotificationOutcome:
-        telegram_text = (
-            "🚨 <b>New role</b>\n\n"
-            f"<b>{escape(job.company)}</b>\n"
-            f"{escape(job.title)}\n"
-            + (f"📍 {escape(job.location)}\n" if job.location else "")
-            + f'\n<a href="{escape(job.url, quote=True)}">Open the application</a>'
-        )
-        plain_text = f"{job.company}\n{job.title}"
-        if job.location:
-            plain_text += f"\n{job.location}"
-        return self._send_all(telegram_text, plain_text, job.url, f"New role at {job.company}")
+    def send_digest(self, entries: list[DigestEntry]) -> NotificationOutcome:
+        """Send one digest (split across messages when long); delivered if every part arrives."""
+        ordered = sort_digest(entries)
+        accepted = sum(entry.decision == "ACCEPT" for entry in ordered)
+        reviews = sum(entry.decision == "REVIEW" for entry in ordered)
+        changes = sum(entry.event != "new" for entry in ordered)
+        summary = f"{accepted} accept, {reviews} review" + (f", {changes} status change(s)" if changes else "")
+        header = f"🚨 <b>Internship digest</b> — {escape(summary)}"
+        telegram_messages = chunk_messages(header, [format_entry_html(entry) for entry in ordered])
+        plain_messages = chunk_messages(f"Internship digest: {summary}", [format_entry_plain(entry) for entry in ordered])
+        errors: list[str] = []
+        delivered = False
+        if self.telegram_bot_token and self.telegram_chat_id:
+            try:
+                for message in telegram_messages:
+                    self._send_telegram(message)
+                delivered = True
+            except Exception as error:
+                errors.append(f"Telegram: {error}")
+        if self.ntfy_topic:
+            try:
+                for message in plain_messages:
+                    self._send_ntfy(message, ordered[0].url if ordered else "", "Internship digest")
+                delivered = True
+            except Exception as error:
+                errors.append(f"ntfy: {error}")
+        return NotificationOutcome(delivered=delivered, errors=tuple(errors))
 
     def send_health(self, result: SourceResult) -> NotificationOutcome:
         detail = _health_error_summary(result.errors)
@@ -97,14 +185,23 @@ class NotificationManager:
         )
 
     def send_test(self) -> NotificationOutcome:
-        job = Job(
-            source_id="test",
-            company="Example Tech Company",
-            title="Associate Product Manager Intern — Summer 2027",
-            url="https://example.com/apply",
-            location="Toronto, Canada / Remote",
+        return self.send_digest(
+            [
+                DigestEntry(
+                    posting_id=0,
+                    company="Example Tech Company",
+                    title="Associate Product Manager Intern — Summer 2027",
+                    location="Toronto, ON",
+                    term="Summer 2027 · 4 months",
+                    decision="ACCEPT",
+                    reason="Core PM title; Canada (GTA); open to returning students",
+                    url="https://example.com/apply",
+                    must_include=True,
+                    core_title=True,
+                    gta=True,
+                )
+            ]
         )
-        return self.send_job(job)
 
     def _send_all(self, telegram_text: str, plain_text: str, click_url: str, title: str) -> NotificationOutcome:
         errors: list[str] = []

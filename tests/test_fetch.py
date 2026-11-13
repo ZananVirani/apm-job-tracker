@@ -9,12 +9,28 @@ from urllib.request import Request
 
 class BrowserRendererTests(unittest.TestCase):
     def test_linkedin_employer_feeds_share_a_request_budget(self) -> None:
-        client = HttpClient(5)
-        with patch("apm_notifier.fetch.time.monotonic", side_effect=(100, 100, 101, 103)), patch("apm_notifier.fetch.time.sleep") as sleep:
-            client._pace_linkedin("https://www.linkedin.com/jobs-guest/search?f_C=1")
-            client._pace_linkedin("https://uk.linkedin.com/jobs-guest/search?f_C=2")
-            client._pace_linkedin("https://jobs.example.com/jobs")
+        client = HttpClient(5, host_interval_seconds=0)
+        with patch("apm_notifier.fetch.time.monotonic", side_effect=(100, 101, 103)), patch("apm_notifier.fetch.time.sleep") as sleep:
+            client._pace("https://www.linkedin.com/jobs-guest/search?f_C=1")
+            client._pace("https://uk.linkedin.com/jobs-guest/search?f_C=2")
+            client._pace("https://jobs.example.com/jobs")
         sleep.assert_called_once_with(2.0)
+
+    def test_each_host_is_paced_independently(self) -> None:
+        client = HttpClient(5, host_interval_seconds=1.5)
+        with patch("apm_notifier.fetch.time.monotonic", side_effect=(10, 10.5, 11.0, 12)), patch("apm_notifier.fetch.time.sleep") as sleep:
+            client._pace("https://boards-api.greenhouse.io/v1/boards/a/jobs")
+            client._pace("https://api.lever.co/v0/postings/b")
+            client._pace("https://boards-api.greenhouse.io/v1/boards/c/jobs")
+        sleep.assert_called_once_with(0.5)
+
+    def test_robots_disallow_is_respected_and_cached(self) -> None:
+        client = HttpClient(5, host_interval_seconds=0)
+        robots = MagicMock(text="User-agent: *\nDisallow: /private/\n")
+        with patch.object(client, "fetch", return_value=robots) as fetch:
+            self.assertFalse(client.allowed_by_robots("https://careers.example.com/private/job/1"))
+            self.assertTrue(client.allowed_by_robots("https://careers.example.com/jobs/2"))
+        fetch.assert_called_once()
 
     def test_dayforce_search_bootstraps_anonymous_csrf_session(self) -> None:
         opener = MagicMock()

@@ -27,7 +27,8 @@ concurrency:
 jobs:
   check-career-pages:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    # Full descriptions are fetched for new candidates, politely paced per host.
+    timeout-minutes: 20
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -37,8 +38,13 @@ jobs:
       REQUEST_TIMEOUT_SECONDS: "25"
       REQUEST_CONCURRENCY: "8"
       TARGET_YEAR: "2027"
-      EXCLUDED_YEARS: "2020,2021,2022,2023,2024,2025,2026"
-      ALLOWED_COUNTRIES: "US,CA,UK"
+      GRADUATION_YEAR: "2028"
+      GRADUATION_MONTH: "4"
+      # Must-include companies run every dispatch; the rest at most hourly.
+      ADDITIONAL_SCAN_MINUTES: "60"
+      MAX_DESCRIPTION_FETCHES: "250"
+      HOST_INTERVAL_SECONDS: "1.0"
+      EXPORT_DIR: ${{ github.workspace }}/data
       # If history is lost, send current matches rather than silently missing them.
       ALERT_ON_FIRST_RUN: "true"
 
@@ -78,6 +84,17 @@ jobs:
       - name: Check career pages and deliver new alerts
         if: ${{ !inputs.show_tiktok_history }}
         run: python3 -m apm_notifier run --once
+
+      - name: Upload current matches (job_matches.csv / .json)
+        if: ${{ always() && !inputs.show_tiktok_history }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: job-matches
+          path: |
+            data/job_matches.csv
+            data/job_matches.json
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Send requested cloud test notification
         if: ${{ inputs.send_test_notification && !inputs.show_tiktok_history }}

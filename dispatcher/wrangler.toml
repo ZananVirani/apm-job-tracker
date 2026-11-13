@@ -1,0 +1,13 @@
+name = "apm-notifier-dispatcher"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+GITHUB_OWNER = "YOUR_GITHUB_USERNAME"
+GITHUB_REPO = "YOUR_NEW_REPO_NAME"
+WORKFLOW_FILE = "monitor.yml"
+GITHUB_REF = "main"
+# GITHUB_TOKEN is a secret: set it with `npx wrangler secret put GITHUB_TOKEN`.

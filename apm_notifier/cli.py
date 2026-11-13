@@ -14,7 +14,8 @@ from urllib.request import urlopen
 from .config import PROJECT_ROOT, Settings, load_sources, save_env_values
 from .fetch import HttpClient, trusted_ssl_context
 from .filtering import RoleFilter
-from .monitor import Monitor
+from .export import export_matches
+from .monitor import Monitor, MonitorOptions
 from .notify import NotificationManager
 from .state import StateStore
 
@@ -22,7 +23,7 @@ from .state import StateStore
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="apm-notifier",
-        description="Monitor company career pages for APM, PM intern, and product marketing intern roles.",
+        description="Monitor company career sites for Summer 2027 product-management internships.",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -31,7 +32,12 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--once", action="store_true", help="Check once and exit")
     run_parser.add_argument("--interval", type=int, help="Override the check interval in seconds")
 
-    subparsers.add_parser("check", help="Fetch sources without notifying or changing state")
+    check_parser = subparsers.add_parser("check", help="Fetch and classify sources without notifying or changing state")
+    check_parser.add_argument("--all", action="store_true", help="Also print REJECT decisions")
+    check_parser.add_argument("--source", action="append", default=[], help="Only check this source id (repeatable)")
+    subparsers.add_parser("report", help="Watchlist health: zero matches vs adapter failures, plus discovered companies")
+    export_parser = subparsers.add_parser("export", help="Write job_matches.csv/json from stored state")
+    export_parser.add_argument("--dir", type=Path, help="Output directory (default: EXPORT_DIR)")
     subparsers.add_parser("setup-telegram", help="Securely configure Telegram and send a test alert")
     subparsers.add_parser("test-notification", help="Send a sample phone notification")
     subparsers.add_parser("sources", help="List configured sources")
@@ -117,17 +123,64 @@ def _notifier(settings: Settings) -> NotificationManager:
     )
 
 
-def _monitor(settings: Settings, store: StateStore) -> Monitor:
+def _monitor(settings: Settings, store: StateStore, only: tuple[str, ...] = ()) -> Monitor:
     sources = load_sources(settings.sources_path)
+    if only:
+        unknown = set(only) - {source.id for source in sources}
+        if unknown:
+            raise ValueError(f"Unknown source id(s): {', '.join(sorted(unknown))}")
+        sources = tuple(source for source in sources if source.id in only)
     return Monitor(
         sources=sources,
-        client=HttpClient(settings.request_timeout_seconds),
-        role_filter=RoleFilter(settings.target_year, settings.excluded_years, settings.allowed_countries),
+        client=HttpClient(settings.request_timeout_seconds, host_interval_seconds=settings.host_interval_seconds),
+        role_filter=RoleFilter(settings.target_year),
         store=store,
         notifier=_notifier(settings),
         concurrency=settings.request_concurrency,
         alert_on_first_run=settings.alert_on_first_run,
+        options=MonitorOptions(
+            target_year=settings.target_year,
+            graduation_year=settings.graduation_year,
+            graduation_month=settings.graduation_month,
+            additional_scan_minutes=settings.additional_scan_minutes,
+            max_description_fetches=settings.max_description_fetches,
+            description_refresh_hours=settings.description_refresh_hours,
+            close_after_hours=settings.close_after_hours,
+            zero_result_warn_runs=settings.zero_result_warn_runs,
+            export_dir=settings.export_dir,
+        ),
     )
+
+
+def _report(settings: Settings, store: StateStore) -> None:
+    sources = load_sources(settings.sources_path, include_disabled=True)
+    health = {row["source_id"]: row for row in store.status_rows()}
+    groups: dict[str, list[str]] = {"must": [], "additional": []}
+    for source in sorted(sources, key=lambda item: item.name.casefold()):
+        row = health.get(source.id)
+        if not source.enabled:
+            state = "DISABLED"
+        elif row is None:
+            state = "NOT SCANNED YET"
+        elif row["consecutive_failures"]:
+            state = f"ADAPTER FAILING x{row['consecutive_failures']}: {row['last_error'][:120]}"
+        elif row["consecutive_empty_runs"] >= settings.zero_result_warn_runs:
+            state = f"SUSPECT ADAPTER: zero postings for {row['consecutive_empty_runs']} runs"
+        elif row["last_accept_review_count"]:
+            state = f"OK, {row['last_accept_review_count']} matching (ACCEPT/REVIEW)"
+        else:
+            raw = row["last_raw_count"]
+            read = f"{raw} postings read" if raw is not None and raw >= 0 else "listing read"
+            state = f"OK, zero matching ({read}, {row['last_match_count']} candidates)"
+        kind = source.ats or "legacy"
+        groups.setdefault(source.tier, []).append(f"  {source.name} [{kind}]: {state}")
+    for tier, label in (("must", "MUST-INCLUDE watchlist"), ("additional", "Additional companies")):
+        print(f"\n{label}:")
+        print("\n".join(groups.get(tier, [])) or "  (none)")
+    registry = store.registry_rows()
+    print(f"\nDiscovered companies (via aggregators): {len(registry)}")
+    for row in registry[:40]:
+        print(f"  {row['company']}: {row['relevant_postings']} relevant / {row['postings_seen']} seen, first {row['first_seen']} via {row['discovered_via']}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -143,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         settings = Settings.from_environment()
         if arguments.command == "sources":
             for source in load_sources(settings.sources_path):
-                print(f"{source.name}: {source.career_url}")
+                print(f"{source.name} [{source.tier}, {source.ats or 'legacy'}]: {source.career_url}")
             return 0
         if arguments.command == "test-notification":
             notifier = _notifier(settings)
@@ -157,25 +210,35 @@ def main(argv: list[str] | None = None) -> int:
 
         store = StateStore(
             Path(":memory:") if arguments.command == "check" else settings.state_path,
-            read_only=arguments.command == "history",
+            read_only=arguments.command in {"history", "report", "export"},
         )
         try:
             if arguments.command == "history":
                 print(json.dumps([dict(row) for row in store.history_rows(arguments.company)], indent=2, ensure_ascii=False))
                 return 0
             if arguments.command == "status":
-                total, pending = store.job_counts()
-                print(f"Tracked matches: {total}; pending notifications: {pending}")
+                counts = store.counts()
+                print(
+                    f"Tracked postings: {counts['total']} (open: {counts['accept']} accept, {counts['review']} review; "
+                    f"{counts['reject']} rejected for audit); pending notifications: {counts['pending']}"
+                )
                 for row in store.status_rows():
                     state = "OK" if row["consecutive_failures"] == 0 else f"FAIL x{row['consecutive_failures']}"
                     print(
-                        f"{state:>8}  {row['source_name']}: matches={row['last_match_count']} "
-                        f"checked={row['last_checked_at']}"
+                        f"{state:>8}  {row['source_name']}: candidates={row['last_match_count']} "
+                        f"read={row['last_raw_count']} checked={row['last_checked_at']}"
                     )
                 return 0
-            monitor = _monitor(settings, store)
+            if arguments.command == "report":
+                _report(settings, store)
+                return 0
+            if arguments.command == "export":
+                csv_path, json_path = export_matches(store.open_matches(), arguments.dir or settings.export_dir)
+                print(f"Wrote {csv_path} and {json_path}")
+                return 0
+            monitor = _monitor(settings, store, tuple(getattr(arguments, "source", ()) or ()))
             if arguments.command == "check":
-                summary = monitor.run_once(dry_run=True)
+                summary = monitor.run_once(dry_run=True, show_rejects=arguments.all)
                 return 0 if summary.sources_ok else 1
             if arguments.command == "run":
                 if arguments.once:

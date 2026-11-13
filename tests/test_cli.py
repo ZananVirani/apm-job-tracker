@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from apm_notifier.cli import main
+from apm_notifier.classify import classify
 from apm_notifier.models import Job
 from apm_notifier.state import StateStore
 
@@ -22,8 +23,11 @@ class HistoryCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "state.sqlite3"
             store = StateStore(path)
-            job = Job("tiktok", "TikTok", "Product Manager Graduate", "https://example.com/jobs/1")
-            store.record_jobs((job, Job("example", "Example", "APM", "https://example.com/jobs/2")))
+            for job in (
+                Job("tiktok", "TikTok", "Product Manager Intern - Summer 2027", "https://example.com/jobs/1", "Toronto, ON"),
+                Job("example", "Example", "APM Intern", "https://example.com/jobs/2", "Toronto, ON"),
+            ):
+                store.upsert_posting(job, classify(job), source_name=job.company)
             store.silence_pending()
             expected = [dict(row) for row in store.history_rows("TikTok")]
             store.close()

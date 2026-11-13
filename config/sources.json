@@ -1,24 +1,787 @@
 {
-  "source_note": "Seeded from Extern's Summer 2027 PM guide, expanded with additional requested companies, and pointed at official company search/career pages.",
+  "source_note": "Watchlist for Summer 2027 product-management internships. tier=must is scanned every run; additional sources every ADDITIONAL_SCAN_MINUTES. 'ats' sources use structured job-board adapters; others use legacy URL extraction. Disabled entries record companies whose careers sites could not be read, with the reason in 'note'.",
   "sources": [
     {
-      "id": "revolut",
-      "name": "Revolut",
-      "career_url": "https://www.revolut.com/careers/",
-      "paginate": true,
-      "urls": [
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=product&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=product&location=Canada&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=product&location=United+Kingdom&start=0"
+      "id": "microsoft",
+      "name": "Microsoft",
+      "tier": "must",
+      "ats": "microsoft",
+      "career_url": "https://careers.microsoft.com/students/",
+      "queries": [
+        "product manager intern",
+        "program manager intern",
+        "intern"
       ]
+    },
+    {
+      "id": "pointclickcare",
+      "name": "PointClickCare",
+      "tier": "must",
+      "ats": "lever",
+      "board": "pointclickcare",
+      "career_url": "https://jobs.lever.co/pointclickcare",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "loblaw-digital",
+      "name": "Loblaw Digital",
+      "tier": "must",
+      "ats": "workday",
+      "host": "myview.wd3.myworkdayjobs.com",
+      "tenant": "myview",
+      "site": "Loblaw-Digital_Careers_Carrieres",
+      "career_url": "https://myview.wd3.myworkdayjobs.com/Loblaw-Digital_Careers_Carrieres",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search"
+    },
+    {
+      "id": "loblaw-digital-sr",
+      "name": "Loblaw Digital",
+      "tier": "must",
+      "ats": "smartrecruiters",
+      "board": "loblawdigital",
+      "career_url": "https://careers.smartrecruiters.com/loblawdigital",
+      "queries": [
+        "intern",
+        "co-op",
+        "student",
+        "product"
+      ],
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "interac",
+      "name": "Interac",
+      "tier": "must",
+      "ats": "workday",
+      "host": "interac.wd3.myworkdayjobs.com",
+      "tenant": "interac",
+      "site": "Interac",
+      "career_url": "https://interac.wd3.myworkdayjobs.com/Interac",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search"
+    },
+    {
+      "id": "1password",
+      "name": "1Password",
+      "tier": "must",
+      "ats": "ashby",
+      "board": "1password",
+      "career_url": "https://jobs.ashbyhq.com/1password",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "dayforce",
+      "name": "Dayforce",
+      "tier": "must",
+      "career_url": "https://jobs.dayforcehcm.com/en-US/mydayforce/InternshipsandCoops",
+      "urls": [
+        "https://jobs.dayforcehcm.com/api/geo/mydayforce/jobposting/search",
+        "https://jobs.dayforcehcm.com/api/geo/mydayforce/jobposting/search",
+        "https://jobs.dayforcehcm.com/api/geo/mydayforce/jobposting/search"
+      ],
+      "request_method": "POST",
+      "paginate": true,
+      "request_bodies": [
+        {
+          "clientNamespace": "mydayforce",
+          "jobBoardCode": "InternshipsandCoops",
+          "cultureCode": "en-US",
+          "searchText": "",
+          "paginationStart": 0,
+          "distanceUnit": 0
+        },
+        {
+          "clientNamespace": "mydayforce",
+          "jobBoardCode": "alljobs",
+          "cultureCode": "en-US",
+          "searchText": "intern",
+          "paginationStart": 0,
+          "distanceUnit": 0
+        },
+        {
+          "clientNamespace": "mydayforce",
+          "jobBoardCode": "alljobs",
+          "cultureCode": "en-US",
+          "searchText": "co-op",
+          "paginationStart": 0,
+          "distanceUnit": 0
+        }
+      ],
+      "url_template": "https://jobs.dayforcehcm.com/en-US/mydayforce/InternshipsandCoops/jobs/{id}",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Dayforce's own InternshipsandCoops and alljobs boards linked from careers.dayforce.com"
+    },
+    {
+      "id": "eq-bank",
+      "name": "EQ Bank (EQB)",
+      "tier": "must",
+      "ats": "lever",
+      "board": "eqbank",
+      "career_url": "https://jobs.lever.co/eqbank",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "kensington-tours",
+      "name": "Kensington (Kensington Tours)",
+      "tier": "must",
+      "ats": "greenhouse",
+      "board": "kensingtontours",
+      "career_url": "https://job-boards.greenhouse.io/kensingtontours",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; 'Kensington' resolved to Kensington Tours (Toronto) - posts Product Intern roles; high confidence"
+    },
+    {
+      "id": "kabam",
+      "name": "Kabam",
+      "tier": "must",
+      "ats": "lever",
+      "board": "kabam",
+      "career_url": "https://jobs.lever.co/kabam",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "bree",
+      "name": "Bree",
+      "tier": "must",
+      "ats": "ashby",
+      "board": "bree",
+      "career_url": "https://jobs.ashbyhq.com/bree",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; 'Bree' resolved to Bree Financial (Toronto fintech) on Ashby; high confidence"
+    },
+    {
+      "id": "wealthsimple",
+      "name": "Wealthsimple",
+      "tier": "must",
+      "ats": "ashby",
+      "board": "wealthsimple",
+      "career_url": "https://jobs.ashbyhq.com/wealthsimple"
+    },
+    {
+      "id": "telus",
+      "name": "TELUS",
+      "tier": "must",
+      "ats": "successfactors",
+      "host": "careers.telus.com",
+      "career_url": "https://careers.telus.com/",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; SuccessFactors RSS found via web search"
+    },
+    {
+      "id": "telus-health",
+      "name": "TELUS Health",
+      "tier": "must",
+      "ats": "workday",
+      "host": "lifeworks.wd3.myworkdayjobs.com",
+      "tenant": "lifeworks",
+      "site": "External",
+      "career_url": "https://lifeworks.wd3.myworkdayjobs.com/External",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search"
+    },
+    {
+      "id": "telus-digital",
+      "name": "TELUS Digital",
+      "tier": "must",
+      "ats": "workday",
+      "host": "telusinternational.wd3.myworkdayjobs.com",
+      "tenant": "telusinternational",
+      "site": "External",
+      "career_url": "https://telusinternational.wd3.myworkdayjobs.com/External",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search",
+      "enabled": false,
+      "note": "TELUS Digital's Workday returns HTTP 403 to clients that identify as a bot; not scraped."
+    },
+    {
+      "id": "autodesk",
+      "name": "Autodesk",
+      "tier": "must",
+      "ats": "workday",
+      "host": "autodesk.wd1.myworkdayjobs.com",
+      "tenant": "autodesk",
+      "site": "Ext",
+      "career_url": "https://autodesk.wd1.myworkdayjobs.com/Ext",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "cibc-campus",
+      "name": "CIBC",
+      "tier": "must",
+      "ats": "workday",
+      "host": "cibc.wd3.myworkdayjobs.com",
+      "tenant": "cibc",
+      "site": "campus",
+      "career_url": "https://cibc.wd3.myworkdayjobs.com/campus",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday campus site found via web search"
+    },
+    {
+      "id": "cibc",
+      "name": "CIBC",
+      "tier": "must",
+      "ats": "workday",
+      "host": "cibc.wd3.myworkdayjobs.com",
+      "tenant": "cibc",
+      "site": "search",
+      "career_url": "https://cibc.wd3.myworkdayjobs.com/search",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search"
+    },
+    {
+      "id": "mlse",
+      "name": "MLSE",
+      "tier": "must",
+      "ats": "workday",
+      "host": "mlse.wd3.myworkdayjobs.com",
+      "tenant": "mlse",
+      "site": "MLSE",
+      "career_url": "https://mlse.wd3.myworkdayjobs.com/MLSE",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search"
+    },
+    {
+      "id": "soti",
+      "name": "SOTI",
+      "tier": "must",
+      "ats": "workday",
+      "host": "soti.wd3.myworkdayjobs.com",
+      "tenant": "soti",
+      "site": "Careers",
+      "career_url": "https://soti.wd3.myworkdayjobs.com/Careers",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found by probing"
+    },
+    {
+      "id": "td",
+      "name": "TD Bank Group",
+      "tier": "must",
+      "ats": "workday",
+      "host": "td.wd3.myworkdayjobs.com",
+      "tenant": "td",
+      "site": "TD_Bank_Careers",
+      "career_url": "https://td.wd3.myworkdayjobs.com/TD_Bank_Careers",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; Workday site found via web search"
+    },
+    {
+      "id": "shopify",
+      "name": "Shopify",
+      "career_url": "https://www.shopify.com/careers/disciplines/product",
+      "urls": [
+        "https://www.shopify.com/careers"
+      ],
+      "tier": "must"
+    },
+    {
+      "id": "scotiabank",
+      "name": "Scotiabank",
+      "tier": "must",
+      "ats": "successfactors",
+      "host": "jobs.scotiabank.com",
+      "career_url": "https://jobs.scotiabank.com/",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; SuccessFactors RSS found via web search"
+    },
+    {
+      "id": "telmax",
+      "name": "telMAX",
+      "tier": "must",
+      "enabled": false,
+      "career_url": "https://telmax.com/",
+      "urls": [
+        "https://telmax.com/"
+      ],
+      "note": "No public ATS or careers feed found; roles appear only on Indeed/aggregators.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "american-express",
+      "name": "American Express",
+      "tier": "must",
+      "enabled": false,
+      "career_url": "https://aexp.eightfold.ai/careers",
+      "urls": [
+        "https://aexp.eightfold.ai/careers"
+      ],
+      "note": "Careers site (Eightfold + Oracle) exposes no public job API; Simplify covers its US internships.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "google",
+      "name": "Google",
+      "career_url": "https://www.google.com/about/careers/applications/programs/apm/",
+      "urls": [
+        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20manager%20intern",
+        "https://www.google.com/about/careers/applications/jobs/results/?q=associate%20product%20manager%20intern",
+        "https://www.google.com/about/careers/applications/jobs/results/?q=program%20manager%20intern",
+        "https://www.google.com/about/careers/applications/jobs/results/?q=intern%202027"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "meta",
+      "name": "Meta",
+      "career_url": "https://www.metacareers.com/careerprograms/students",
+      "render": true,
+      "urls": [
+        "https://www.metacareers.com/jobsearch/?q=product%20manager%20intern",
+        "https://www.metacareers.com/jobsearch/?q=program%20manager%20intern",
+        "https://www.metacareers.com/jobsearch/?q=intern"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "career_url": "https://www.amazon.jobs/teams/internships-for-students",
+      "urls": [
+        "https://www.amazon.jobs/en/search.json?base_query=product%20manager%20intern&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=program%20manager%20intern&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=intern&loc_query=&offset=0&result_limit=100"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "career_url": "https://jobs.apple.com/en-us/search?team=internships-STDNT-INTRN",
+      "render": true,
+      "urls": [
+        "https://jobs.apple.com/en-us/search?search=product%20manager%20intern&sort=relevance",
+        "https://jobs.apple.com/en-us/search?search=program%20manager%20intern&sort=relevance",
+        "https://jobs.apple.com/en-us/search?search=intern&sort=relevance"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "salesforce",
+      "name": "Salesforce (incl. Slack)",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "salesforce.wd12.myworkdayjobs.com",
+      "tenant": "salesforce",
+      "site": "External_Career_Site",
+      "career_url": "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site"
+    },
+    {
+      "id": "adobe",
+      "name": "Adobe",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "adobe.wd5.myworkdayjobs.com",
+      "tenant": "adobe",
+      "site": "external_experienced",
+      "career_url": "https://adobe.wd5.myworkdayjobs.com/external_experienced"
+    },
+    {
+      "id": "atlassian",
+      "name": "Atlassian",
+      "tier": "additional",
+      "ats": "atlassian",
+      "career_url": "https://www.atlassian.com/company/careers/all-jobs",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; public listings endpoint used by atlassian.com"
+    },
+    {
+      "id": "intuit",
+      "name": "Intuit",
+      "career_url": "https://www.intuit.com/careers/",
+      "urls": [
+        "https://jobs.intuit.com/search-jobs/intern/27595/1",
+        "https://jobs.intuit.com/search-jobs/product%20manager%20intern/27595/1"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "uber",
+      "name": "Uber",
+      "career_url": "https://www.uber.com/us/en/careers/apm/",
+      "urls": [
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=intern&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=intern&location=Canada&start=0"
+      ],
+      "paginate": true,
+      "tier": "additional"
+    },
+    {
+      "id": "airbnb",
+      "name": "Airbnb",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "airbnb",
+      "career_url": "https://job-boards.greenhouse.io/airbnb"
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "career_url": "https://careers.linkedin.com/",
+      "urls": [
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=intern&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=intern&location=Canada&start=0"
+      ],
+      "paginate": true,
+      "tier": "additional"
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "stripe",
+      "career_url": "https://job-boards.greenhouse.io/stripe"
+    },
+    {
+      "id": "block",
+      "name": "Block / Square",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "block",
+      "career_url": "https://job-boards.greenhouse.io/block"
+    },
+    {
+      "id": "databricks",
+      "name": "Databricks",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "databricks",
+      "career_url": "https://job-boards.greenhouse.io/databricks"
+    },
+    {
+      "id": "snowflake",
+      "name": "Snowflake",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "snowflake",
+      "career_url": "https://jobs.ashbyhq.com/snowflake",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
     },
     {
       "id": "figma",
       "name": "Figma",
-      "career_url": "https://www.figma.com/careers/early-career/",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "figma",
+      "career_url": "https://job-boards.greenhouse.io/figma"
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "notion",
+      "career_url": "https://jobs.ashbyhq.com/notion",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "ramp",
+      "name": "Ramp",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "ramp",
+      "career_url": "https://jobs.ashbyhq.com/ramp",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "cisco",
+      "name": "Cisco",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "cisco.wd5.myworkdayjobs.com",
+      "tenant": "cisco",
+      "site": "Cisco_Careers",
+      "career_url": "https://cisco.wd5.myworkdayjobs.com/Cisco_Careers",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "oracle",
+      "name": "Oracle",
+      "career_url": "https://www.oracle.com/careers/students-grads/",
+      "url_template": "https://careers.oracle.com/en/sites/jobsearch/job/{id}",
       "urls": [
-        "https://boards-api.greenhouse.io/v1/boards/figma/jobs"
-      ]
+        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=intern",
+        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=product%20manager%20intern"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "sap",
+      "name": "SAP",
+      "tier": "additional",
+      "ats": "successfactors",
+      "host": "jobs.sap.com",
+      "career_url": "https://jobs.sap.com/",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; SAP careers run on SuccessFactors",
+      "enabled": false,
+      "note": "jobs.sap.com returns HTTP 403 to clients that identify as a bot; not scraped."
+    },
+    {
+      "id": "servicenow",
+      "name": "ServiceNow",
+      "tier": "additional",
+      "ats": "smartrecruiters",
+      "board": "ServiceNow",
+      "career_url": "https://careers.smartrecruiters.com/ServiceNow"
+    },
+    {
+      "id": "workday-early-career",
+      "name": "Workday",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "workday.wd5.myworkdayjobs.com",
+      "tenant": "workday",
+      "site": "Workday_Early_Career",
+      "career_url": "https://workday.wd5.myworkdayjobs.com/Workday_Early_Career",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday early-career site found via web search"
+    },
+    {
+      "id": "ibm",
+      "name": "IBM",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.ibm.com/careers/search",
+      "urls": [
+        "https://www.ibm.com/careers/search"
+      ],
+      "note": "IBM's search is a JavaScript app over a private API; not scraped. Simplify covers IBM internships.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "nvidia.wd5.myworkdayjobs.com",
+      "tenant": "nvidia",
+      "site": "NVIDIAExternalCareerSite",
+      "career_url": "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite"
+    },
+    {
+      "id": "dropbox",
+      "name": "Dropbox",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "dropbox",
+      "career_url": "https://job-boards.greenhouse.io/dropbox",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "twilio",
+      "name": "Twilio",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "twilio",
+      "career_url": "https://job-boards.greenhouse.io/twilio",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "okta",
+      "name": "Okta",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "okta",
+      "career_url": "https://job-boards.greenhouse.io/okta",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "zoom.wd5.myworkdayjobs.com",
+      "tenant": "zoom",
+      "site": "Zoom",
+      "career_url": "https://zoom.wd5.myworkdayjobs.com/Zoom",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "cloudflare",
+      "career_url": "https://job-boards.greenhouse.io/cloudflare",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "cohere",
+      "name": "Cohere",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "cohere",
+      "career_url": "https://jobs.ashbyhq.com/cohere",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "ada",
+      "name": "Ada",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "ada18",
+      "career_url": "https://job-boards.greenhouse.io/ada18",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "clio",
+      "name": "Clio",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.clio.com/about/careers/",
+      "urls": [
+        "https://www.clio.com/about/careers/"
+      ],
+      "note": "Careers page returns HTTP 403 to automated clients; no public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "hootsuite",
+      "name": "Hootsuite",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "hootsuite",
+      "career_url": "https://job-boards.greenhouse.io/hootsuite",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "faire",
+      "name": "Faire",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "faire",
+      "career_url": "https://job-boards.greenhouse.io/faire",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "lightspeed",
+      "name": "Lightspeed Commerce",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "lightspeedhq",
+      "career_url": "https://jobs.ashbyhq.com/lightspeedhq",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "nuvei",
+      "name": "Nuvei",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://apply.workable.com/nuvei/",
+      "urls": [
+        "https://apply.workable.com/nuvei/"
+      ],
+      "note": "Workable account 'nuvei' rate-limited (HTTP 429) the public API; re-test later.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "procore",
+      "name": "Procore",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://careers.procore.com/",
+      "urls": [
+        "https://careers.procore.com/"
+      ],
+      "note": "No public ATS board found (careers site is a custom app).",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "thomson-reuters",
+      "name": "Thomson Reuters",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "thomsonreuters.wd5.myworkdayjobs.com",
+      "tenant": "thomsonreuters",
+      "site": "External_Career_Site",
+      "career_url": "https://thomsonreuters.wd5.myworkdayjobs.com/External_Career_Site",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "opentext",
+      "name": "OpenText",
+      "tier": "additional",
+      "ats": "successfactors",
+      "host": "careers.opentext.com",
+      "career_url": "https://careers.opentext.com/",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; SuccessFactors site found via web search",
+      "enabled": false,
+      "note": "careers.opentext.com no longer serves the SuccessFactors RSS feed; no other public API found."
+    },
+    {
+      "id": "absolute-software",
+      "name": "Absolute Software",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.absolute.com/company/careers/",
+      "urls": [
+        "https://www.absolute.com/company/careers/"
+      ],
+      "note": "Careers page TLS chain did not verify and no ATS board was found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "miovision",
+      "name": "Miovision",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "miovision",
+      "career_url": "https://jobs.ashbyhq.com/miovision",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "koho",
+      "name": "KOHO",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "koho",
+      "career_url": "https://jobs.ashbyhq.com/koho",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "neo-financial",
+      "name": "Neo Financial",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "neofinancial",
+      "career_url": "https://jobs.ashbyhq.com/neofinancial",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
     },
     {
       "id": "questrade",
@@ -38,558 +801,570 @@
           "clientNamespace": "qfg",
           "jobBoardCode": "CANDIDATEPORTAL",
           "cultureCode": "en-US",
-          "searchText": "product",
+          "searchText": "intern",
           "paginationStart": 0,
           "distanceUnit": 0
         }
-      ]
-    },
-    {
-      "id": "mastercard-product",
-      "name": "Mastercard",
-      "career_url": "https://careers.mastercard.com/us/en/",
-      "include_product_specialists": true,
-      "paginate": true,
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers/{path}",
-      "urls": [
-        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"
       ],
-      "request_bodies": [
-        {
-          "appliedFacets": {
-            "jobFamilyGroup": [
-              "2008c8ccf9ae4e56b7d0ea7b3d319a98"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": ""
-        }
-      ]
+      "tier": "additional"
     },
     {
-      "id": "google",
-      "name": "Google",
-      "career_url": "https://www.google.com/about/careers/applications/programs/apm/",
-      "urls": [
-        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20manager%20intern",
-        "https://www.google.com/about/careers/applications/jobs/results/?q=associate%20product%20manager",
-        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20marketing%20intern",
-        "https://www.google.com/about/careers/applications/jobs/results/?q=graduate+product"
-      ]
+      "id": "float",
+      "name": "Float Financial",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "float",
+      "career_url": "https://jobs.ashbyhq.com/float",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
     },
     {
-      "id": "meta",
-      "name": "Meta",
-      "career_url": "https://www.metacareers.com/careerprograms/students",
-      "render": true,
-      "urls": [
-        "https://www.metacareers.com/jobsearch/?q=product+manager+intern",
-        "https://www.metacareers.com/jobsearch/?q=rotational+product+manager",
-        "https://www.metacareers.com/jobsearch/?q=product+marketing+intern",
-        "https://www.metacareers.com/jobsearch/?q=graduate+product"
-      ]
+      "id": "auvik",
+      "name": "Auvik",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "auviknetworks",
+      "career_url": "https://job-boards.greenhouse.io/auviknetworks",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
     },
     {
-      "id": "amazon",
-      "name": "Amazon",
-      "career_url": "https://www.amazon.jobs/teams/internships-for-students",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://www.amazon.jobs/en/search.json?base_query=product%20manager%20intern&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=product%20marketing%20intern&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=associate%20product%20manager&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=marketing%20intern&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=marketing%20specialist&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=marketing%20analyst&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=graduate+product&offset=0&result_limit=100"
-      ]
+      "id": "top-hat",
+      "name": "Top Hat",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "top-hat",
+      "career_url": "https://jobs.ashbyhq.com/top-hat",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Ashby board linked from tophat.com"
     },
     {
-      "id": "microsoft",
-      "name": "Microsoft",
-      "career_url": "https://careers.microsoft.com/students/",
-      "render": true,
-      "urls": [
-        "https://apply.careers.microsoft.com/careers?query=%22product+manager+intern%22+OR+%22product+manager+internship%22+OR+%22product+management+intern%22+OR+%22product+management+internship%22+OR+%22product+marketing+intern%22+OR+%22product+marketing+internship%22+OR+%22associate+product+manager%22+OR+%22rotational+product+manager%22+OR+%22product+owner%22+OR+%22product+builder%22+OR+%22graduate+product%22+OR+%22apprentice+product%22&start=0"
-      ]
+      "id": "d2l",
+      "name": "D2L",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "d2l",
+      "career_url": "https://job-boards.greenhouse.io/d2l",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
     },
     {
-      "id": "apple",
-      "name": "Apple",
-      "career_url": "https://jobs.apple.com/en-us/search?team=internships-STDNT-INTRN",
-      "render": true,
+      "id": "mappedin",
+      "name": "Mappedin",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.mappedin.com/careers/",
       "urls": [
-        "https://jobs.apple.com/en-us/search?search=product%20manager%20intern&sort=relevance",
-        "https://jobs.apple.com/en-us/search?search=product%20marketing%20intern&sort=relevance",
-        "https://jobs.apple.com/en-us/search?search=graduate+product&sort=relevance"
-      ]
+        "https://www.mappedin.com/careers/"
+      ],
+      "note": "No public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "applyboard",
+      "name": "ApplyBoard",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "applyboard.wd3.myworkdayjobs.com",
+      "tenant": "applyboard",
+      "site": "ApplyBoardNH",
+      "career_url": "https://applyboard.wd3.myworkdayjobs.com/ApplyBoardNH",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday link on applyboard.com/careers"
+    },
+    {
+      "id": "maple",
+      "name": "Maple",
+      "tier": "additional",
+      "ats": "lever",
+      "board": "getmaple",
+      "career_url": "https://jobs.lever.co/getmaple",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "wattpad",
+      "name": "Wattpad / WEBTOON",
+      "tier": "additional",
+      "ats": "lever",
+      "board": "wattpad",
+      "career_url": "https://jobs.lever.co/wattpad",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "ubisoft",
+      "name": "Ubisoft (incl. Ubisoft Toronto)",
+      "tier": "additional",
+      "ats": "smartrecruiters",
+      "board": "Ubisoft2",
+      "career_url": "https://careers.smartrecruiters.com/Ubisoft2",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
     },
     {
       "id": "ea",
       "name": "Electronic Arts (EA)",
       "career_url": "https://www.ea.com/careers/early-careers",
-      "include_adjacent_marketing": true,
       "urls": [
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20manager%20intern",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20marketing%20intern",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=associate%20product%20manager",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20intern",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20specialist",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20analyst",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=graduate+product"
-      ]
-    },
-    {
-      "id": "shopify",
-      "name": "Shopify",
-      "career_url": "https://www.shopify.com/careers/disciplines/product",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://www.shopify.com/careers"
-      ]
-    },
-    {
-      "id": "instacart",
-      "name": "Instacart",
-      "career_url": "https://www.instacart.careers/apm",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/instacart/jobs"
-      ]
-    },
-    {
-      "id": "patreon",
-      "name": "Patreon",
-      "career_url": "https://www.patreon.com/careers",
-      "urls": [
-        "https://api.ashbyhq.com/posting-api/job-board/patreon"
-      ]
-    },
-    {
-      "id": "stripe",
-      "name": "Stripe",
-      "career_url": "https://stripe.com/jobs/university",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/stripe/jobs"
-      ]
-    },
-    {
-      "id": "uber",
-      "name": "Uber",
-      "career_url": "https://www.uber.com/us/en/careers/apm/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=product&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=marketing&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=product&location=Canada&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=marketing&location=Canada&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=product&location=United+Kingdom&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=marketing&location=United+Kingdom&start=0"
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=intern",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=co-op",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20manager%20intern"
       ],
-      "paginate": true
+      "tier": "additional"
+    },
+    {
+      "id": "plooto",
+      "name": "Plooto",
+      "tier": "additional",
+      "ats": "lever",
+      "board": "plooto",
+      "career_url": "https://jobs.lever.co/plooto",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "paypal.wd1.myworkdayjobs.com",
+      "tenant": "paypal",
+      "site": "jobs",
+      "career_url": "https://paypal.wd1.myworkdayjobs.com/jobs",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "visa",
+      "name": "Visa",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "visa.wd5.myworkdayjobs.com",
+      "tenant": "visa",
+      "site": "Visa",
+      "career_url": "https://visa.wd5.myworkdayjobs.com/Visa"
     },
     {
       "id": "mastercard",
       "name": "Mastercard",
-      "career_url": "https://careers.mastercard.com/us/en/",
-      "include_adjacent_marketing": true,
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers/{path}",
-      "urls": [
-        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
-        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
-        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
-        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
-        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"
-      ],
-      "request_bodies": [
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product manager intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "associate product manager"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product marketing intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing specialist"
-        }
-      ]
+      "tier": "additional",
+      "ats": "workday",
+      "host": "mastercard.wd1.myworkdayjobs.com",
+      "tenant": "mastercard",
+      "site": "CorporateCareers",
+      "career_url": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers"
     },
     {
-      "id": "wealthsimple",
-      "name": "Wealthsimple",
-      "career_url": "https://www.wealthsimple.com/en-ca/careers",
-      "include_adjacent_marketing": true,
+      "id": "rbc",
+      "name": "RBC",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "rbc.wd3.myworkdayjobs.com",
+      "tenant": "rbc",
+      "site": "RBCGLOBAL1",
+      "career_url": "https://rbc.wd3.myworkdayjobs.com/RBCGLOBAL1",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "bmo",
+      "name": "BMO",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "bmo.wd3.myworkdayjobs.com",
+      "tenant": "bmo",
+      "site": "External",
+      "career_url": "https://bmo.wd3.myworkdayjobs.com/External",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found via web search"
+    },
+    {
+      "id": "national-bank",
+      "name": "National Bank of Canada",
+      "tier": "additional",
+      "career_url": "https://jobs.nbc.ca/en_CA/careers",
       "urls": [
-        "https://api.ashbyhq.com/posting-api/job-board/wealthsimple"
-      ]
+        "https://jobs.nbc.ca/en_CA/careers/SearchJobs/?search=intern",
+        "https://jobs.nbc.ca/en_CA/careers/SearchJobs/?search=co-op",
+        "https://jobs.nbc.ca/en_CA/careers/SearchJobs/?search=stage"
+      ],
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "desjardins",
+      "name": "Desjardins",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "desjardins.wd10.myworkdayjobs.com",
+      "tenant": "desjardins",
+      "site": "Desjardins",
+      "career_url": "https://desjardins.wd10.myworkdayjobs.com/Desjardins",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "manulife",
+      "name": "Manulife",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "manulife.wd3.myworkdayjobs.com",
+      "tenant": "manulife",
+      "site": "MFCJH_Jobs",
+      "career_url": "https://manulife.wd3.myworkdayjobs.com/MFCJH_Jobs",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "sun-life",
+      "name": "Sun Life",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "sunlife.wd3.myworkdayjobs.com",
+      "tenant": "sunlife",
+      "site": "Experienced-Jobs",
+      "career_url": "https://sunlife.wd3.myworkdayjobs.com/Experienced-Jobs",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "sun-life-campus",
+      "name": "Sun Life",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "sunlife.wd3.myworkdayjobs.com",
+      "tenant": "sunlife",
+      "site": "Campus",
+      "career_url": "https://sunlife.wd3.myworkdayjobs.com/Campus",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday campus site found by probing"
+    },
+    {
+      "id": "intact",
+      "name": "Intact",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "intactfc.wd3.myworkdayjobs.com",
+      "tenant": "intactfc",
+      "site": "IntactFC",
+      "career_url": "https://intactfc.wd3.myworkdayjobs.com/IntactFC",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "rogers",
+      "name": "Rogers",
+      "tier": "additional",
+      "ats": "successfactors",
+      "host": "jobs.rogers.com",
+      "career_url": "https://jobs.rogers.com/",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; SuccessFactors RSS"
+    },
+    {
+      "id": "bell",
+      "name": "Bell (BCE)",
+      "tier": "additional",
+      "career_url": "https://jobs.bell.ca/",
+      "urls": [
+        "https://jobs.bell.ca/ca/en/search-results?keywords=intern",
+        "https://jobs.bell.ca/ca/en/search-results?keywords=co-op"
+      ],
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "canadian-tire",
+      "name": "Canadian Tire",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "canadiantirecorporation.wd3.myworkdayjobs.com",
+      "tenant": "canadiantirecorporation",
+      "site": "Enterprise_External_Careers_Site",
+      "career_url": "https://canadiantirecorporation.wd3.myworkdayjobs.com/Enterprise_External_Careers_Site",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found via web search"
+    },
+    {
+      "id": "sobeys",
+      "name": "Sobeys / Empire",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://careers.sobeys.com/",
+      "urls": [
+        "https://careers.sobeys.com/"
+      ],
+      "note": "Careers site timed out and no ATS board was found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "lululemon",
+      "name": "Lululemon",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://careers.lululemon.com/",
+      "urls": [
+        "https://careers.lululemon.com/"
+      ],
+      "note": "Careers site refuses requests that identify as a bot; not scraped.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "air-canada",
+      "name": "Air Canada",
+      "tier": "additional",
+      "career_url": "https://careers.aircanada.com/",
+      "urls": [
+        "https://careers.aircanada.com/ca/en/search-results?keywords=intern",
+        "https://careers.aircanada.com/ca/en/search-results?keywords=co-op"
+      ],
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "hydro-one",
+      "name": "Hydro One",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.hydroone.com/careers",
+      "urls": [
+        "https://www.hydroone.com/careers"
+      ],
+      "note": "No public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "ontario-teachers",
+      "name": "Ontario Teachers' Pension Plan",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "otppb.wd3.myworkdayjobs.com",
+      "tenant": "otppb",
+      "site": "OntarioTeachers_Careers",
+      "career_url": "https://otppb.wd3.myworkdayjobs.com/OntarioTeachers_Careers",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday link on otpp.com"
+    },
+    {
+      "id": "cpp-investments",
+      "name": "CPP Investments",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.cppinvestments.com/careers/",
+      "urls": [
+        "https://www.cppinvestments.com/careers/"
+      ],
+      "note": "No public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "omers",
+      "name": "OMERS",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.omers.com/careers",
+      "urls": [
+        "https://www.omers.com/careers"
+      ],
+      "note": "No public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "deloitte",
+      "name": "Deloitte Canada",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www2.deloitte.com/ca/en/careers.html",
+      "urls": [
+        "https://www2.deloitte.com/ca/en/careers.html"
+      ],
+      "note": "No public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "accenture",
+      "name": "Accenture",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "accenture.wd103.myworkdayjobs.com",
+      "tenant": "accenture",
+      "site": "AccentureCareers",
+      "career_url": "https://accenture.wd103.myworkdayjobs.com/AccentureCareers",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday site found by probing"
+    },
+    {
+      "id": "kpmg",
+      "name": "KPMG Canada",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://kpmg.com/ca/en/careers.html",
+      "urls": [
+        "https://kpmg.com/ca/en/careers.html"
+      ],
+      "note": "No public ATS board found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "pwc",
+      "name": "PwC",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "pwc.wd3.myworkdayjobs.com",
+      "tenant": "pwc",
+      "site": "Global_Campus_Careers",
+      "career_url": "https://pwc.wd3.myworkdayjobs.com/Global_Campus_Careers",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested list; Workday campus site found by probing"
+    },
+    {
+      "id": "ey",
+      "name": "EY Canada",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.ey.com/en_ca/careers/students",
+      "urls": [
+        "https://www.ey.com/en_ca/careers/students"
+      ],
+      "note": "Careers page TLS chain did not verify and no ATS board was found.",
+      "added_on": "2026-11-12",
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+    },
+    {
+      "id": "revolut",
+      "name": "Revolut",
+      "career_url": "https://www.revolut.com/careers/",
+      "paginate": true,
+      "urls": [
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=intern&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=intern&location=Canada&start=0"
+      ],
+      "tier": "additional"
+    },
+    {
+      "id": "instacart",
+      "name": "Instacart",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "instacart",
+      "career_url": "https://job-boards.greenhouse.io/instacart"
+    },
+    {
+      "id": "patreon",
+      "name": "Patreon",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "patreon",
+      "career_url": "https://jobs.ashbyhq.com/patreon"
     },
     {
       "id": "openai",
       "name": "OpenAI",
-      "career_url": "https://openai.com/careers/search/",
-      "include_adjacent_marketing": true,
-      "include_growth_product_roles": true,
-      "urls": [
-        "https://api.ashbyhq.com/posting-api/job-board/openai"
-      ]
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "openai",
+      "career_url": "https://jobs.ashbyhq.com/openai"
     },
     {
       "id": "anthropic",
       "name": "Anthropic",
-      "career_url": "https://www.anthropic.com/careers/jobs",
-      "include_adjacent_marketing": true,
-      "include_growth_product_roles": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/anthropic/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "anthropic",
+      "career_url": "https://job-boards.greenhouse.io/anthropic"
     },
     {
       "id": "lime",
       "name": "Lime",
-      "career_url": "https://www.li.me/about/careers",
-      "include_adjacent_marketing": true,
-      "url_template": "https://jobs.ashbyhq.com/Lime/{id}",
-      "urls": [
-        "https://jobs.ashbyhq.com/Lime?embed=js"
-      ]
-    },
-    {
-      "id": "autodesk-canada",
-      "name": "Autodesk (Canada)",
-      "career_url": "https://autodesk.wd1.myworkdayjobs.com/Ext?locationCountry=a30a87ed25634629aa6c3958aa2b91ea",
-      "include_adjacent_marketing": true,
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://autodesk.wd1.myworkdayjobs.com/Ext/{path}",
-      "urls": [
-        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
-        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
-        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
-        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs"
-      ],
-      "request_bodies": [
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing intern"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing specialist"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing analyst"
-        }
-      ],
-      "paginate": true
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "Lime",
+      "career_url": "https://jobs.ashbyhq.com/Lime",
+      "enabled": false,
+      "note": "Ashby board 'Lime' now returns 404 (board moved or closed); Simplify still covers Lime internships."
     },
     {
       "id": "coinbase",
       "name": "Coinbase",
-      "career_url": "https://www.coinbase.com/careers",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/coinbase/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "coinbase",
+      "career_url": "https://job-boards.greenhouse.io/coinbase"
     },
     {
       "id": "doordash",
       "name": "DoorDash",
-      "career_url": "https://careersatdoordash.com/job-search/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/doordashusa/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "doordashusa",
+      "career_url": "https://job-boards.greenhouse.io/doordashusa"
     },
     {
       "id": "duolingo",
       "name": "Duolingo",
-      "career_url": "https://careers.duolingo.com/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/duolingo/jobs"
-      ]
-    },
-    {
-      "id": "linkedin",
-      "name": "LinkedIn",
-      "career_url": "https://careers.linkedin.com/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product&location=Canada&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing&location=Canada&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product&location=United+Kingdom&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing&location=United+Kingdom&start=0"
-      ],
-      "paginate": true
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "duolingo",
+      "career_url": "https://job-boards.greenhouse.io/duolingo"
     },
     {
       "id": "lyft",
       "name": "Lyft",
-      "career_url": "https://www.lyft.com/careers",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/lyft/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "lyft",
+      "career_url": "https://job-boards.greenhouse.io/lyft"
     },
     {
       "id": "reddit",
       "name": "Reddit",
-      "career_url": "https://www.redditinc.com/careers",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/reddit/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "reddit",
+      "career_url": "https://job-boards.greenhouse.io/reddit"
     },
     {
       "id": "snap",
       "name": "Snap",
       "career_url": "https://careers.snap.com/jobs",
-      "include_adjacent_marketing": true,
       "urls": [
         "https://careers.snap.com/api/jobs"
-      ]
-    },
-    {
-      "id": "visa",
-      "name": "Visa",
-      "career_url": "https://corporate.visa.com/en/careers.html",
-      "include_adjacent_marketing": true,
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://visa.wd5.myworkdayjobs.com/Visa/{path}",
-      "urls": [
-        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
-        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
-        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
-        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs"
       ],
-      "request_bodies": [
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea",
-              "29247e57dbaf46fb855b224e03170bc7",
-              "bc33aa3152ec42d4995f4791a106ed09"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea",
-              "29247e57dbaf46fb855b224e03170bc7",
-              "bc33aa3152ec42d4995f4791a106ed09"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing intern"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea",
-              "29247e57dbaf46fb855b224e03170bc7",
-              "bc33aa3152ec42d4995f4791a106ed09"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing specialist"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea",
-              "29247e57dbaf46fb855b224e03170bc7",
-              "bc33aa3152ec42d4995f4791a106ed09"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing analyst"
-        }
-      ],
-      "paginate": true
+      "tier": "additional"
     },
     {
       "id": "zynga",
       "name": "Zynga",
-      "career_url": "https://www.zynga.com/jobs/careers/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/zyngacareers/jobs"
-      ]
-    },
-    {
-      "id": "nvidia",
-      "name": "NVIDIA",
-      "career_url": "https://jobs.nvidia.com/",
-      "include_adjacent_marketing": true,
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/{path}",
-      "urls": [
-        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
-        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
-        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
-        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs"
-      ],
-      "request_bodies": [
-        {
-          "appliedFacets": {
-            "locationHierarchy1": [
-              "2fcb99c455831013ea529c3b93ba3236",
-              "2fcb99c455831013ea52f785717432d2",
-              "2fcb99c455831013ea52fb338f2932d8"
-            ],
-            "workerSubType": [
-              "0c40f6bd1d8f10adf6dae42e46d44a17",
-              "ab40a98049581037a3ada55b087049b7"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product"
-        },
-        {
-          "appliedFacets": {
-            "locationHierarchy1": [
-              "2fcb99c455831013ea529c3b93ba3236",
-              "2fcb99c455831013ea52f785717432d2",
-              "2fcb99c455831013ea52fb338f2932d8"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing intern"
-        },
-        {
-          "appliedFacets": {
-            "locationHierarchy1": [
-              "2fcb99c455831013ea529c3b93ba3236",
-              "2fcb99c455831013ea52f785717432d2",
-              "2fcb99c455831013ea52fb338f2932d8"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing specialist"
-        },
-        {
-          "appliedFacets": {
-            "locationHierarchy1": [
-              "2fcb99c455831013ea529c3b93ba3236",
-              "2fcb99c455831013ea52f785717432d2",
-              "2fcb99c455831013ea52fb338f2932d8"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing analyst"
-        }
-      ],
-      "paginate": true
-    },
-    {
-      "id": "airbnb",
-      "name": "Airbnb",
-      "career_url": "https://careers.airbnb.com/internship-programs/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/airbnb/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "zyngacareers",
+      "career_url": "https://job-boards.greenhouse.io/zyngacareers"
     },
     {
       "id": "palantir",
       "name": "Palantir",
-      "career_url": "https://www.palantir.com/careers/",
-      "urls": [
-        "https://api.lever.co/v0/postings/palantir?mode=json&team=Product%20Development",
-        "https://api.lever.co/v0/postings/palantir?mode=json&team=Communications"
-      ]
+      "tier": "additional",
+      "ats": "lever",
+      "board": "palantir",
+      "career_url": "https://jobs.lever.co/palantir"
     },
     {
       "id": "tiktok",
       "name": "TikTok",
       "career_url": "https://lifeattiktok.com/",
-      "verify_graduate_education": true,
       "urls": [
-        "https://api.lifeattiktok.com/api/v1/public/supplier/search/job/posts",
         "https://api.lifeattiktok.com/api/v1/public/supplier/search/job/posts"
       ],
       "priority": true,
-      "include_adjacent_marketing": true,
       "request_method": "POST",
       "headers": {
         "Content-Type": "application/json",
@@ -600,16 +1375,6 @@
       "url_template": "https://lifeattiktok.com/search/{id}",
       "paginate": true,
       "request_bodies": [
-        {
-          "keyword": "graduate",
-          "limit": 100,
-          "offset": 0,
-          "job_category_id_list": [],
-          "location_code_list": [],
-          "recruitment_id_list": [],
-          "subject_id_list": [],
-          "tag_id_list": []
-        },
         {
           "keyword": "",
           "limit": 100,
@@ -622,166 +1387,44 @@
           "subject_id_list": [],
           "tag_id_list": []
         }
-      ]
-    },
-    {
-      "id": "databricks",
-      "name": "Databricks",
-      "career_url": "https://www.databricks.com/company/careers/university-recruiting",
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/databricks/jobs"
-      ]
-    },
-    {
-      "id": "salesforce",
-      "name": "Salesforce",
-      "career_url": "https://careers.salesforce.com/en/university/",
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site/{path}",
-      "urls": [
-        "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs"
       ],
-      "request_bodies": [
-        {
-          "appliedFacets": {
-            "jobFamilyGroup": [
-              "14fa3452ec7c1011f90cf2c552640000"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product"
-        }
-      ],
-      "paginate": true
-    },
-    {
-      "id": "adobe",
-      "name": "Adobe",
-      "career_url": "https://www.adobe.com/careers.html",
-      "include_adjacent_marketing": true,
-      "request_method": "POST",
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "url_template": "https://adobe.wd5.myworkdayjobs.com/external_experienced/{path}",
-      "urls": [
-        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
-        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
-        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
-        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs"
-      ],
-      "request_bodies": [
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing specialist"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "marketing analyst"
-        }
-      ],
-      "paginate": true
-    },
-    {
-      "id": "oracle",
-      "name": "Oracle",
-      "career_url": "https://www.oracle.com/careers/students-grads/",
-      "url_template": "https://careers.oracle.com/en/sites/jobsearch/job/{id}",
-      "urls": [
-        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=product%20manager%20intern",
-        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=product%20marketing%20intern",
-        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=associate%20product%20manager"
-      ]
-    },
-    {
-      "id": "servicenow",
-      "name": "ServiceNow",
-      "career_url": "https://www.servicenow.com/careers.html",
-      "url_template": "https://jobs.smartrecruiters.com/ServiceNow/{id}",
-      "urls": [
-        "https://api.smartrecruiters.com/v1/companies/ServiceNow/postings?limit=100&offset=0",
-        "https://api.smartrecruiters.com/v1/companies/ServiceNow/postings?limit=100&offset=100",
-        "https://api.smartrecruiters.com/v1/companies/ServiceNow/postings?limit=100&offset=200"
-      ]
-    },
-    {
-      "id": "intuit",
-      "name": "Intuit",
-      "career_url": "https://www.intuit.com/careers/",
-      "urls": [
-        "https://jobs.intuit.com/search-jobs/product%20manager%20intern/27595/1",
-        "https://jobs.intuit.com/search-jobs/product%20marketing%20intern/27595/1"
-      ]
-    },
-    {
-      "id": "hubspot",
-      "name": "HubSpot",
-      "career_url": "https://www.hubspot.com/careers",
-      "urls": [
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=product&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=product&location=Canada&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=product&location=United+Kingdom&start=0"
-      ],
-      "paginate": true
+      "tier": "additional"
     },
     {
       "id": "spotify",
       "name": "Spotify",
-      "career_url": "https://www.lifeatspotify.com/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.lever.co/v0/postings/spotify?mode=json"
-      ]
+      "tier": "additional",
+      "ats": "lever",
+      "board": "spotify",
+      "career_url": "https://jobs.lever.co/spotify"
     },
     {
       "id": "netflix",
       "name": "Netflix",
-      "career_url": "https://jobs.netflix.com/",
-      "urls": [
-        "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20manager%20intern&start=0",
-        "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20marketing%20intern&start=0",
-        "https://app.eightfold.ai/careers?domain=netflix.com&query=graduate+product&start=0"
-      ]
+      "tier": "additional",
+      "ats": "eightfold",
+      "host": "explore.jobs.netflix.net",
+      "domain": "netflix.com",
+      "career_url": "https://explore.jobs.netflix.net/careers"
     },
     {
       "id": "nike",
       "name": "Nike",
       "career_url": "https://jobs.nike.com/",
       "urls": [
-        "https://careers.nike.com/jobs?keywords=product%20manager%20intern",
-        "https://careers.nike.com/jobs?keywords=product%20marketing%20intern",
-        "https://careers.nike.com/jobs?keywords=graduate+product"
-      ]
+        "https://careers.nike.com/jobs?keywords=intern"
+      ],
+      "tier": "additional"
     },
     {
       "id": "disney",
       "name": "Disney",
       "career_url": "https://www.disneycareers.com",
       "urls": [
-        "https://www.disneycareers.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Keywords=product&SearchType=1&SearchResultsModuleName=Search+Results&SearchResultType=1&OrganizationIds=391-28648&SortCriteria=0&SortDirection=1",
-        "https://www.disneycareers.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Keywords=marketing&SearchType=1&SearchResultsModuleName=Search+Results&SearchResultType=1&OrganizationIds=391-28648&SortCriteria=0&SortDirection=1"
+        "https://www.disneycareers.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Keywords=intern&SearchType=1&SearchResultsModuleName=Search+Results&SearchResultType=1&OrganizationIds=391-28648&SortCriteria=0&SortDirection=1"
       ],
-      "paginate": true
+      "paginate": true,
+      "tier": "additional"
     },
     {
       "id": "walmart",
@@ -790,46 +1433,37 @@
       "render": true,
       "urls": [
         "https://careers.walmart.com/us/en/results?searchQuery=product%20manager%20intern",
-        "https://careers.walmart.com/us/en/results?searchQuery=product%20marketing%20intern",
-        "https://careers.walmart.com/us/en/results?searchQuery=graduate+product"
-      ]
+        "https://careers.walmart.com/us/en/results?searchQuery=intern"
+      ],
+      "tier": "additional"
     },
     {
       "id": "capital-one",
       "name": "Capital One",
       "career_url": "https://www.capitalonecareers.com/internship-programs",
       "urls": [
-        "https://www.capitalonecareers.com/search-jobs/product%20manager%20intern/1732/1",
-        "https://www.capitalonecareers.com/search-jobs/product%20marketing%20intern/1732/1"
-      ]
-    },
-    {
-      "id": "block",
-      "name": "Block / Square",
-      "career_url": "https://block.xyz/careers",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/block/jobs"
-      ]
+        "https://www.capitalonecareers.com/search-jobs/intern/1732/1",
+        "https://www.capitalonecareers.com/search-jobs/product%20manager%20intern/1732/1"
+      ],
+      "tier": "additional"
     },
     {
       "id": "robinhood",
       "name": "Robinhood",
-      "career_url": "https://earlytalent.robinhood.com/",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://api.greenhouse.io/v1/boards/robinhood/jobs"
-      ]
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "robinhood",
+      "career_url": "https://job-boards.greenhouse.io/robinhood"
     },
     {
       "id": "bloomberg",
       "name": "Bloomberg",
       "career_url": "https://www.bloomberg.com/careers/",
       "urls": [
-        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20manager%20intern",
-        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20marketing%20intern",
-        "https://bloomberg.avature.net/careers/SearchJobs/?q=graduate+product"
-      ]
+        "https://bloomberg.avature.net/careers/SearchJobs/?q=intern",
+        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20manager%20intern"
+      ],
+      "tier": "additional"
     },
     {
       "id": "yc-startups",
@@ -838,7 +1472,9 @@
       "render": true,
       "urls": [
         "https://www.workatastartup.com/jobs/l/product-manager"
-      ]
+      ],
+      "aggregator": true,
+      "tier": "additional"
     },
     {
       "id": "summer-2027-community-backcheck",
@@ -847,7 +1483,20 @@
       "verify_job_links": true,
       "urls": [
         "https://raw.githubusercontent.com/sndsh404/summer-2027-internships/main/README.md"
-      ]
+      ],
+      "tier": "additional",
+      "aggregator": true
+    },
+    {
+      "id": "simplify-summer-2027",
+      "name": "Simplify Summer 2027 Internships",
+      "tier": "additional",
+      "ats": "simplify",
+      "aggregator": true,
+      "listings_url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
+      "career_url": "https://github.com/SimplifyJobs/Summer2027-Internships",
+      "added_on": "2026-11-12",
+      "discovered_via": "secondary discovery source (Simplify internship list)"
     },
     {
       "id": "wellfound",
@@ -856,16 +1505,8 @@
       "enabled": false,
       "urls": [
         "https://wellfound.com/role/product-manager-intern"
-      ]
-    },
-    {
-      "id": "newgrad-community-backcheck",
-      "name": "New Graduate Community Back-check",
-      "career_url": "https://github.com/SimplifyJobs/New-Grad-Positions",
-      "verify_job_links": true,
-      "urls": [
-        "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/README.md"
-      ]
+      ],
+      "tier": "additional"
     }
   ]
 }
