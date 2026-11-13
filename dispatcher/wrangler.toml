@@ -6,8 +6,8 @@ compatibility_date = "2024-09-23"
 crons = ["*/5 * * * *"]
 
 [vars]
-GITHUB_OWNER = "YOUR_GITHUB_USERNAME"
-GITHUB_REPO = "YOUR_NEW_REPO_NAME"
+GITHUB_OWNER = "ZananVirani"
+GITHUB_REPO = "apm-job-tracker"
 WORKFLOW_FILE = "monitor.yml"
 GITHUB_REF = "main"
 # GITHUB_TOKEN is a secret: set it with `npx wrangler secret put GITHUB_TOKEN`.
