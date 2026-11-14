@@ -329,7 +329,7 @@
         "https://www.google.com/about/careers/applications/jobs/results/?q=program%20manager%20intern",
         "https://www.google.com/about/careers/applications/jobs/results/?q=intern%202027"
       ],
-      "tier": "additional"
+      "tier": "must"
     },
     {
       "id": "meta",
@@ -341,7 +341,7 @@
         "https://www.metacareers.com/jobsearch/?q=program%20manager%20intern",
         "https://www.metacareers.com/jobsearch/?q=intern"
       ],
-      "tier": "additional"
+      "tier": "must"
     },
     {
       "id": "amazon",
@@ -403,7 +403,7 @@
         "https://jobs.intuit.com/search-jobs/intern/27595/1",
         "https://jobs.intuit.com/search-jobs/product%20manager%20intern/27595/1"
       ],
-      "tier": "additional"
+      "tier": "must"
     },
     {
       "id": "uber",
@@ -454,7 +454,7 @@
     {
       "id": "databricks",
       "name": "Databricks",
-      "tier": "additional",
+      "tier": "must",
       "ats": "greenhouse",
       "board": "databricks",
       "career_url": "https://job-boards.greenhouse.io/databricks"
@@ -555,20 +555,16 @@
     {
       "id": "ibm",
       "name": "IBM",
-      "tier": "additional",
-      "enabled": false,
+      "tier": "must",
+      "ats": "ibm",
       "career_url": "https://www.ibm.com/careers/search",
-      "urls": [
-        "https://www.ibm.com/careers/search"
-      ],
-      "note": "IBM's search is a JavaScript app over a private API; not scraped. Simplify covers IBM internships.",
       "added_on": "2026-11-12",
-      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+      "discovered_via": "requested watchlist; re-enabled 2026-11-13 via IBM's public site-search API (www-api.ibm.com/search/api/v2)"
     },
     {
       "id": "nvidia",
       "name": "NVIDIA",
-      "tier": "additional",
+      "tier": "must",
       "ats": "workday",
       "host": "nvidia.wd5.myworkdayjobs.com",
       "tenant": "nvidia",
@@ -1311,7 +1307,7 @@
     {
       "id": "coinbase",
       "name": "Coinbase",
-      "tier": "additional",
+      "tier": "must",
       "ats": "greenhouse",
       "board": "coinbase",
       "career_url": "https://job-boards.greenhouse.io/coinbase"

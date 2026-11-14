@@ -624,6 +624,66 @@ class SimplifyAdapter(Adapter):
         return result
 
 
+class IbmAdapter(Adapter):
+    """IBM's careers search runs on IBM's public site-search API (the one careers.ibm.com uses)."""
+
+    name = "ibm"
+    URL = "https://www-api.ibm.com/search/api/v2"
+    PAGE_SIZE = 100
+    MAX_RESULTS = 500
+
+    def scan(self, source: Source) -> AdapterResult:
+        result = AdapterResult()
+        seen: set[str] = set()
+        for query in source.ats_options.get("queries", ("intern", "internship", "co-op", "product manager")):
+            offset = 0
+            while offset < self.MAX_RESULTS:
+                body = {
+                    "appId": "careers",
+                    "scopes": ["careers2"],
+                    "query": {"bool": {"must": [{"simple_query_string": {"query": query, "fields": ["title^3", "body"]}}]}},
+                    "size": self.PAGE_SIZE,
+                    "from": offset,
+                    "lang": "zz",
+                    "_source": ["title", "url", "body", "field_keyword_17", "field_keyword_18", "field_keyword_19"],
+                }
+                try:
+                    payload = self._post_json(self.URL, body, result)
+                    hits = payload["hits"]["hits"]
+                except Exception as error:
+                    self._query_failed(result, query, error)
+                    break
+                for hit in hits:
+                    row = hit.get("_source") or {}
+                    url = str(row.get("url") or "")
+                    if not url or url in seen:
+                        continue
+                    seen.add(url)
+                    result.raw_count += 1
+                    title = normalize_space(row.get("title", ""))
+                    if not self._keep(title):
+                        continue
+                    workplace = str(row.get("field_keyword_17") or "")
+                    req = re.search(r"jobId=(\d+)", url)
+                    result.jobs.append(
+                        Job(
+                            source_id=source.id,
+                            company=source.name,
+                            title=title,
+                            url=url,
+                            location=normalize_space(str(row.get("field_keyword_19") or "")),
+                            description=str(row.get("body") or ""),
+                            req_id=req.group(1) if req else "",
+                            employment_type=str(row.get("field_keyword_18") or ""),
+                            remote=True if workplace.casefold() == "remote" else None,
+                        )
+                    )
+                if len(hits) < self.PAGE_SIZE:
+                    break
+                offset += self.PAGE_SIZE
+        return result
+
+
 ADAPTERS: dict[str, type[Adapter]] = {
     adapter.name: adapter
     for adapter in (
@@ -636,6 +696,7 @@ ADAPTERS: dict[str, type[Adapter]] = {
         EightfoldAdapter,
         SuccessFactorsRssAdapter,
         AtlassianAdapter,
+        IbmAdapter,
         SimplifyAdapter,
     )
 }

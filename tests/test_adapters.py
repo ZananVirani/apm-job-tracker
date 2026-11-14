@@ -4,6 +4,7 @@ import unittest
 from apm_notifier.adapters import (
     DescriptionFetcher,
     GreenhouseAdapter,
+    IbmAdapter,
     SimplifyAdapter,
     SuccessFactorsRssAdapter,
     WorkdayAdapter,
@@ -129,3 +130,23 @@ class OtherAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IbmAdapterTests(unittest.TestCase):
+    def test_reads_search_api_hits_and_dedupes_across_queries(self) -> None:
+        def handler(url, body):
+            return {"hits": {"hits": [
+                {"_source": {"title": "Product Management Intern 2027", "url": "https://careers.ibm.com/careers/JobDetail?jobId=136426",
+                             "body": "As a Product Management Intern you will shape the roadmap.", "field_keyword_17": "Hybrid",
+                             "field_keyword_18": "Internship", "field_keyword_19": "Yorktown Heights, US"}},
+                {"_source": {"title": "Senior Product Manager", "url": "https://careers.ibm.com/careers/JobDetail?jobId=1"}},
+            ]}}
+
+        source = Source("ibm", "IBM", (), "https://www.ibm.com/careers/search", ats="ibm", ats_options={"queries": ["intern", "co-op"]})
+        result = IbmAdapter(RecordingClient(handler), RoleFilter()).scan(source)
+        self.assertEqual(len(result.jobs), 1)
+        job = result.jobs[0]
+        self.assertEqual(job.req_id, "136426")
+        self.assertEqual(job.location, "Yorktown Heights, US")
+        self.assertEqual(job.employment_type, "Internship")
+        self.assertEqual(result.raw_count, 2)

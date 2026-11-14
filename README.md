@@ -152,7 +152,7 @@ Edit [`config/sources.json`](config/sources.json). Structured sources need only 
 {"id": "telus", "name": "TELUS", "ats": "successfactors", "host": "careers.telus.com"}
 ```
 
-Supported `ats` values: `greenhouse`, `lever`, `ashby`, `smartrecruiters` (`board`), `workday` (`host`, `tenant`, `site`), `successfactors` (`host`), `microsoft`, `eightfold` (`host`, `domain`), `atlassian` and `simplify` (`listings_url`). Optional `queries` override the default intern keywords. Sources without `ats` use a list of `urls` and the generic extractor. `tier` is `must` or `additional`; set `enabled: false` with a `note` to document a company that cannot be scanned.
+Supported `ats` values: `greenhouse`, `lever`, `ashby`, `smartrecruiters` (`board`), `workday` (`host`, `tenant`, `site`), `successfactors` (`host`), `microsoft`, `eightfold` (`host`, `domain`), `atlassian`, `ibm` and `simplify` (`listings_url`). Optional `queries` override the default intern keywords. Sources without `ats` use a list of `urls` and the generic extractor. `tier` is `must` or `additional`; set `enabled: false` with a `note` to document a company that cannot be scanned.
 
 ## First-run behavior
 
