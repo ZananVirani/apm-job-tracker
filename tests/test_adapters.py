@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import patch
 
 from apm_notifier.adapters import (
     DescriptionFetcher,
@@ -60,7 +61,8 @@ class WorkdayAdapterTests(unittest.TestCase):
 
         client = RecordingClient(handler)
         source = Source("x", "X", (), "", ats="workday", ats_options={"host": "x.wd3.myworkdayjobs.com", "tenant": "x", "site": "Ext"})
-        result = WorkdayAdapter(client, RoleFilter(2027)).scan(source)
+        with patch("apm_notifier.adapters.time.sleep"):
+            result = WorkdayAdapter(client, RoleFilter(2027)).scan(source)
         facet_search = json.loads(client.requests[1][1])
         self.assertEqual(facet_search["appliedFacets"], {"locationCountry": ["ca-id", "us-id"], "workerSubType": ["intern-id"]})
         self.assertEqual([job.title for job in result.jobs], ["Product Manager Intern"])
@@ -69,6 +71,63 @@ class WorkdayAdapterTests(unittest.TestCase):
         self.assertEqual(result.raw_count, 2)
         self.assertFalse(result.complete)
         self.assertTrue(any("co-op" in error for error in result.errors))
+        # One failed keyword search out of six: degraded, not an outage.
+        self.assertEqual((result.queries, result.failed_queries), (6, 1))
+        self.assertTrue(result.mostly_succeeded)
+
+    def test_falls_back_to_the_myworkdaysite_mirror_and_remembers_it(self) -> None:
+        def handler(url, body):
+            if "myworkdayjobs.com" in url:
+                return RuntimeError("HTTP Error 521: <none>")
+            if body is None:
+                return {"jobPostingInfo": {"jobDescription": "<p>Write PRDs</p>", "canApply": True}}
+            if body["limit"] == 1:
+                return {"total": 1, "jobPostings": [], "facets": []}
+            if body["searchText"] == "intern":
+                return {"total": 1, "jobPostings": [
+                    {"title": "Product Manager Intern", "externalPath": "/job/Toronto/PM-Intern_R1", "locationsText": "Toronto, ON", "bulletFields": ["R1"]},
+                ]}
+            return {"total": 0, "jobPostings": []}
+
+        client = RecordingClient(handler)
+        client.workday_routes = {}
+        source = Source("x", "X", (), "", ats="workday", ats_options={"host": "x.wd5.myworkdayjobs.com", "tenant": "x", "site": "Ext"})
+        result = WorkdayAdapter(client, RoleFilter(2027)).scan(source)
+        self.assertEqual(result.errors, [])
+        self.assertEqual([job.title for job in result.jobs], ["Product Manager Intern"])
+        # Public links still point at the normal career site.
+        self.assertEqual(result.jobs[0].url, "https://x.wd5.myworkdayjobs.com/Ext/job/Toronto/PM-Intern_R1")
+        self.assertEqual(client.requests[1][0], "https://wd5.myworkdaysite.com/wday/cxs/x/Ext/jobs")
+        self.assertEqual(client.workday_routes, {"x.wd5.myworkdayjobs.com": "wd5.myworkdaysite.com"})
+        # Later requests in the run go straight to the host that answered.
+        before = len(client.requests)
+        detail = DescriptionFetcher(client).fetch(result.jobs[0])
+        self.assertIn("PRDs", detail.text)
+        self.assertEqual(len(client.requests), before + 1)
+        self.assertTrue(client.requests[-1][0].startswith("https://wd5.myworkdaysite.com/wday/cxs/x/Ext/job/"))
+
+    def test_failed_search_is_retried_once_before_it_counts(self) -> None:
+        attempts = {"intern": 0}
+
+        def handler(url, body):
+            if body["limit"] == 1:
+                return {"total": 1, "jobPostings": [], "facets": []}
+            if body["searchText"] == "intern":
+                attempts["intern"] += 1
+                if attempts["intern"] <= 2:  # Both hosts fail during the first pass.
+                    return RuntimeError("HTTP Error 521: <none>")
+                return {"total": 1, "jobPostings": [
+                    {"title": "Product Manager Intern", "externalPath": "/job/Toronto/PM-Intern_R1", "locationsText": "Toronto, ON"},
+                ]}
+            return {"total": 0, "jobPostings": []}
+
+        source = Source("x", "X", (), "", ats="workday", ats_options={"host": "x.wd1.myworkdayjobs.com", "tenant": "x", "site": "Ext"})
+        with patch("apm_notifier.adapters.time.sleep") as sleep:
+            result = WorkdayAdapter(RecordingClient(handler), RoleFilter(2027)).scan(source)
+        sleep.assert_called_once()
+        self.assertEqual(result.errors, [])
+        self.assertTrue(result.complete)
+        self.assertEqual(len(result.jobs), 1)
 
     def test_detail_fetch_reports_closed_and_country(self) -> None:
         detail = {"jobPostingInfo": {

@@ -3,7 +3,8 @@ import io
 import unittest
 from unittest.mock import patch, MagicMock
 
-from apm_notifier.fetch import BrowserRenderer, HttpClient
+from apm_notifier.fetch import BrowserRenderer, FetchError, HttpClient
+from urllib.error import HTTPError
 from urllib.request import Request
 
 
@@ -40,6 +41,28 @@ class BrowserRendererTests(unittest.TestCase):
             HttpClient(5)._open_request(request)
         self.assertEqual(opener.open.call_count, 2)
         self.assertEqual(request.get_header("X-csrf-token"), "public-test-token")
+
+    def test_cloudflare_origin_errors_are_retried(self) -> None:
+        client = HttpClient(5, host_interval_seconds=0)
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = b'{"jobPostings": []}'
+        response.headers.get.return_value = "application/json"
+        response.headers.get_content_charset.return_value = "utf-8"
+        response.geturl.return_value = "https://x.wd5.myworkdayjobs.com/wday/cxs/x/Ext/jobs"
+        down = HTTPError("https://x.wd5.myworkdayjobs.com", 521, "<none>", {}, None)
+        with patch.object(client, "_open_request", side_effect=(down, response)) as opened, patch("apm_notifier.fetch.time.sleep"):
+            result = client.fetch("https://x.wd5.myworkdayjobs.com/wday/cxs/x/Ext/jobs")
+        self.assertEqual(opened.call_count, 2)
+        self.assertIn("jobPostings", result.text)
+
+    def test_permanent_client_errors_are_not_retried(self) -> None:
+        client = HttpClient(5, host_interval_seconds=0)
+        missing = HTTPError("https://example.com", 404, "Not Found", {}, None)
+        with patch.object(client, "_open_request", side_effect=missing) as opened:
+            with self.assertRaises(FetchError):
+                client.fetch("https://example.com/jobs")
+        self.assertEqual(opened.call_count, 1)
 
     def test_retries_a_transient_browser_timeout(self) -> None:
         renderer = BrowserRenderer(5)

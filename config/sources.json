@@ -1,5 +1,5 @@
 {
-  "source_note": "Watchlist for Summer 2027 product-management internships. tier=must is scanned every run; additional sources every ADDITIONAL_SCAN_MINUTES. 'ats' sources use structured job-board adapters; others use legacy URL extraction. Disabled entries record companies whose careers sites could not be read, with the reason in 'note'.",
+  "source_note": "Watchlist for Summer 2027 product-management internships. tier=must is scanned every run; additional sources every ADDITIONAL_SCAN_MINUTES. 'ats' sources use structured job-board adapters; others use legacy URL extraction. Disabled entries record companies whose careers sites could not be read, with the reason in 'note'. Every company on apmlist.com is covered: by its own entry, by a parent company's board (Mojang -> Microsoft, Splunk -> Cisco, Slack -> Salesforce, Square -> Block, Google APMM -> Google), or as a disabled entry explaining why it cannot be read.",
   "sources": [
     {
       "id": "microsoft",
@@ -1519,6 +1519,436 @@
         "https://wellfound.com/role/product-manager-intern"
       ],
       "tier": "additional"
+    },
+    {
+      "id": "appian",
+      "name": "Appian",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "appian",
+      "career_url": "https://job-boards.greenhouse.io/appian",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "arcade-ai",
+      "name": "Arcade AI",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "arcade-ai",
+      "career_url": "https://jobs.ashbyhq.com/arcade-ai",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "asana",
+      "name": "Asana",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "asana",
+      "career_url": "https://job-boards.greenhouse.io/asana",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "blackrock",
+      "name": "BlackRock",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "blackrock.wd1.myworkdayjobs.com",
+      "tenant": "blackrock",
+      "site": "BlackRock_Professional",
+      "career_url": "https://blackrock.wd1.myworkdayjobs.com/BlackRock_Professional",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "cloud-software-group",
+      "name": "Citrix (Cloud Software Group)",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "tibco.wd5.myworkdayjobs.com",
+      "tenant": "tibco",
+      "site": "Cloud_Software_Group",
+      "career_url": "https://tibco.wd5.myworkdayjobs.com/Cloud_Software_Group",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "crowdstrike",
+      "name": "CrowdStrike",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "crowdstrike.wd5.myworkdayjobs.com",
+      "tenant": "crowdstrike",
+      "site": "crowdstrikecareers",
+      "career_url": "https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "datadog",
+      "name": "Datadog",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "datadog",
+      "career_url": "https://job-boards.greenhouse.io/datadog",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "ebay",
+      "name": "eBay",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "ebay.wd5.myworkdayjobs.com",
+      "tenant": "ebay",
+      "site": "apply",
+      "career_url": "https://ebay.wd5.myworkdayjobs.com/apply",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "expedia",
+      "name": "Expedia Group",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "expedia.wd108.myworkdayjobs.com",
+      "tenant": "expedia",
+      "site": "search",
+      "career_url": "https://expedia.wd108.myworkdayjobs.com/search",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "tier": "additional",
+      "career_url": "https://www.github.careers/careers-home/jobs",
+      "urls": [
+        "https://www.github.careers/api/jobs?keywords=intern&page=1&limit=100",
+        "https://www.github.careers/api/jobs?keywords=product%20manager&page=1&limit=100"
+      ],
+      "url_template": "https://www.github.careers/careers-home/jobs/{id}",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); public JSON feed behind github.careers (robots.txt allows, crawl-delay 5s honoured)"
+    },
+    {
+      "id": "hpe",
+      "name": "Hewlett Packard Enterprise",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "hpe.wd5.myworkdayjobs.com",
+      "tenant": "hpe",
+      "site": "Jobsathpe",
+      "career_url": "https://hpe.wd5.myworkdayjobs.com/Jobsathpe",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "ixl-learning",
+      "name": "IXL Learning",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "ixllearning",
+      "career_url": "https://job-boards.greenhouse.io/ixllearning",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "jane-street",
+      "name": "Jane Street",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "janestreet",
+      "career_url": "https://job-boards.greenhouse.io/janestreet",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "kleiner-perkins-fellows",
+      "name": "Kleiner Perkins Fellows",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "kleinerperkinsfellows",
+      "career_url": "https://jobs.ashbyhq.com/kleinerperkinsfellows",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "masterclass",
+      "name": "MasterClass",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "masterclass",
+      "career_url": "https://job-boards.greenhouse.io/masterclass",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "miro",
+      "name": "Miro",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "realtimeboardglobal",
+      "career_url": "https://job-boards.greenhouse.io/realtimeboardglobal",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "mongodb",
+      "name": "MongoDB",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "mongodb",
+      "career_url": "https://job-boards.greenhouse.io/mongodb",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "mozilla",
+      "name": "Mozilla",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "mozilla",
+      "career_url": "https://job-boards.greenhouse.io/mozilla",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "okx",
+      "name": "OKX",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "okx",
+      "career_url": "https://job-boards.greenhouse.io/okx",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "perplexity",
+      "career_url": "https://jobs.ashbyhq.com/perplexity",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "pinterest",
+      "name": "Pinterest",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "pinterest",
+      "career_url": "https://job-boards.greenhouse.io/pinterest",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "rakuten",
+      "name": "Rakuten",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "rakuten.wd1.myworkdayjobs.com",
+      "tenant": "rakuten",
+      "site": "RakutenAmericas",
+      "career_url": "https://rakuten.wd1.myworkdayjobs.com/RakutenAmericas",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "red-hat",
+      "name": "Red Hat",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "redhat.wd5.myworkdayjobs.com",
+      "tenant": "redhat",
+      "site": "jobs",
+      "career_url": "https://redhat.wd5.myworkdayjobs.com/jobs",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "roblox",
+      "name": "Roblox",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "roblox",
+      "career_url": "https://job-boards.greenhouse.io/roblox",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "samsara",
+      "name": "Samsara",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "samsara",
+      "career_url": "https://job-boards.greenhouse.io/samsara",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "scale-ai",
+      "name": "Scale AI",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "scaleai",
+      "career_url": "https://job-boards.greenhouse.io/scaleai",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "sierra",
+      "name": "Sierra AI",
+      "tier": "additional",
+      "ats": "ashby",
+      "board": "sierra",
+      "career_url": "https://jobs.ashbyhq.com/sierra",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "stubhub",
+      "name": "StubHub",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "stubhubinc",
+      "career_url": "https://job-boards.greenhouse.io/stubhubinc",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "tencent",
+      "name": "Tencent",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "tencent.wd1.myworkdayjobs.com",
+      "tenant": "tencent",
+      "site": "Tencent_Careers",
+      "career_url": "https://tencent.wd1.myworkdayjobs.com/Tencent_Careers",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "the-trade-desk",
+      "name": "The Trade Desk",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "thetradedesk",
+      "career_url": "https://job-boards.greenhouse.io/thetradedesk",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "match-group",
+      "name": "Tinder (Match Group)",
+      "tier": "additional",
+      "ats": "lever",
+      "board": "matchgroup",
+      "career_url": "https://jobs.lever.co/matchgroup",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "warner-bros-discovery",
+      "name": "Warner Bros. Discovery",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "warnerbros.wd5.myworkdayjobs.com",
+      "tenant": "warnerbros",
+      "site": "global",
+      "career_url": "https://warnerbros.wd5.myworkdayjobs.com/global",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "x-xai",
+      "name": "X (xAI)",
+      "tier": "additional",
+      "ats": "greenhouse",
+      "board": "xai",
+      "career_url": "https://job-boards.greenhouse.io/xai",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "yahoo",
+      "name": "Yahoo",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "ouryahoo.wd5.myworkdayjobs.com",
+      "tenant": "ouryahoo",
+      "site": "careers",
+      "career_url": "https://ouryahoo.wd5.myworkdayjobs.com/careers",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14); board found by probing public ATS APIs"
+    },
+    {
+      "id": "bytedance",
+      "name": "ByteDance",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://joinbytedance.com/search",
+      "urls": [
+        "https://joinbytedance.com/search"
+      ],
+      "note": "joinbytedance.com's job API returns Access Denied to automated clients; ByteDance's North American roles are also posted on TikTok's feed (scanned) and Simplify.",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14)"
+    },
+    {
+      "id": "indeed",
+      "name": "Indeed",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.indeed.com/cmp/Indeed/jobs",
+      "urls": [
+        "https://www.indeed.com/cmp/Indeed/jobs"
+      ],
+      "note": "indeed.com returns HTTP 403 to clients that identify as a bot and its Greenhouse board is empty; not scraped. Simplify covers its internships.",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14)"
+    },
+    {
+      "id": "lenovo",
+      "name": "Lenovo",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://jobs.lenovo.com/en_US/careers/SearchJobs/product%20manager%20intern",
+      "urls": [
+        "https://jobs.lenovo.com/en_US/careers/SearchJobs/product%20manager%20intern"
+      ],
+      "note": "jobs.lenovo.com drops automated TLS connections and its Workday API requires login; not scraped.",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14)"
+    },
+    {
+      "id": "qualcomm",
+      "name": "Qualcomm",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://careers.qualcomm.com/careers",
+      "urls": [
+        "https://careers.qualcomm.com/careers"
+      ],
+      "note": "Qualcomm's Eightfold careers API returns HTTP 403 to clients that identify as a bot; not scraped. Simplify covers its internships.",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14)"
+    },
+    {
+      "id": "tesla",
+      "name": "Tesla",
+      "tier": "additional",
+      "enabled": false,
+      "career_url": "https://www.tesla.com/careers/search",
+      "urls": [
+        "https://www.tesla.com/careers/search"
+      ],
+      "note": "tesla.com careers returns HTTP 403 (Akamai bot wall) to automated clients; not scraped. Simplify covers its internships.",
+      "added_on": "2026-11-14",
+      "discovered_via": "apmlist.com (2026-11-14)"
     }
   ]
 }

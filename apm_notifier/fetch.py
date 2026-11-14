@@ -28,7 +28,10 @@ DEFAULT_HEADERS = {
 }
 # Minimum spacing between requests to one host; LinkedIn's guest feed is stricter.
 DEFAULT_HOST_INTERVAL_SECONDS = 1.0
-SLOW_HOSTS = {"linkedin.com": 3.0, "apply.careers.microsoft.com": 3.0}
+SLOW_HOSTS = {"linkedin.com": 3.0, "apply.careers.microsoft.com": 3.0, "github.careers": 5.0}
+# Standard transient statuses plus Cloudflare's origin errors (520-527, 530). Workday's
+# US clusters sit behind Cloudflare and intermittently answer 521 "web server is down".
+RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530}
 BLOCK_MARKERS = (
     "access denied",
     "attention required! | cloudflare",
@@ -73,6 +76,8 @@ class HttpClient:
         self._next_request: dict[str, float] = {}
         self._robots: dict[str, RobotFileParser | None] = {}
         self._robots_lock = threading.Lock()
+        # Workday API host that last answered for each career-site host (see adapters).
+        self.workday_routes: dict[str, str] = {}
 
     def fetch(
         self,
@@ -103,7 +108,7 @@ class HttpClient:
                     )
             except HTTPError as error:
                 last_error = error
-                if error.code not in {408, 425, 429, 500, 502, 503, 504}:
+                if error.code not in RETRYABLE_STATUS:
                     break
                 retry_after = error.headers.get("Retry-After", "")
                 delay = int(retry_after) if retry_after.isdigit() else 1.5 * (2 ** attempt)

@@ -15,11 +15,12 @@ import json
 import logging
 import re
 import threading
+import time
 from typing import Any, Iterable
 from urllib.parse import parse_qs, quote, urlencode, urlsplit
 
 from .classify import plain_text
-from .fetch import HttpClient
+from .fetch import FetchError, HttpClient
 from .filtering import RoleFilter
 from .models import Job, Source, normalize_space
 
@@ -46,6 +47,14 @@ class AdapterResult:
     errors: list[str] = field(default_factory=list)
     requests: int = 0
     complete: bool = True
+    # Independent searches attempted and failed; a scan where most searches worked is
+    # degraded (logged) rather than a source outage (alerted).
+    queries: int = 0
+    failed_queries: int = 0
+
+    @property
+    def mostly_succeeded(self) -> bool:
+        return self.queries > 0 and self.failed_queries * 2 < self.queries
 
 
 def _country_code(value: str) -> str:
@@ -91,7 +100,15 @@ class Adapter:
     def _query_failed(result: AdapterResult, query: str, error: Exception) -> None:
         """Keep what other queries found; a failed query only marks the scan incomplete."""
         result.errors.append(f"query {query!r}: {error}")
+        result.failed_queries += 1
         result.complete = False
+
+    def _run_query(self, result: AdapterResult, label: str, search) -> None:
+        result.queries += 1
+        try:
+            search()
+        except Exception as error:
+            self._query_failed(result, label, error)
 
 
 class GreenhouseAdapter(Adapter):
@@ -230,10 +247,7 @@ class SmartRecruitersAdapter(Adapter):
         company = source.ats_options["board"]
         seen: set[str] = set()
         for query in source.ats_options.get("queries", INTERN_QUERIES):
-            try:
-                self._scan_query(source, company, query, seen, result)
-            except Exception as error:
-                self._query_failed(result, query, error)
+            self._run_query(result, query, lambda query=query: self._scan_query(source, company, query, seen, result))
         return result
 
     def _scan_query(self, source: Source, company: str, query: str, seen: set[str], result: AdapterResult) -> None:
@@ -290,18 +304,71 @@ def _walk_workday_facets(facets: Iterable[Any], parameter: str = "") -> Iterable
                 yield current, normalize_space(value.get("descriptor", "")), str(value["id"])
 
 
+WORKDAY_CLUSTER_HOST = re.compile(r"^[^.]+\.(wd\d+)\.myworkdayjobs\.com$", re.IGNORECASE)
+
+
+def workday_api_hosts(client: HttpClient, host: str) -> list[str]:
+    """Hosts serving one tenant's CxS API, the one that last answered first.
+
+    Every ``tenant.wdN.myworkdayjobs.com`` API is also served at ``wdN.myworkdaysite.com``
+    (Workday's own alternate career-site domain). The US clusters intermittently answer
+    the first with Cloudflare 521 errors while the second keeps working.
+    """
+    hosts = [host]
+    match = WORKDAY_CLUSTER_HOST.match(host)
+    if match:
+        hosts.append(f"{match.group(1).casefold()}.myworkdaysite.com")
+    routes = getattr(client, "workday_routes", None)
+    preferred = routes.get(host) if isinstance(routes, dict) else None
+    if preferred in hosts:
+        hosts.remove(preferred)
+        hosts.insert(0, preferred)
+    return hosts
+
+
+def workday_request(client: HttpClient, host: str, path: str, body: Any = None) -> Any:
+    """GET (or POST ``body``) a Workday CxS path, falling back to the mirror host."""
+    failures: list[str] = []
+    for candidate in workday_api_hosts(client, host):
+        try:
+            if body is None:
+                response = client.fetch(f"https://{candidate}{path}", {"Accept": "application/json"})
+            else:
+                response = client.fetch(f"https://{candidate}{path}", JSON_HEADERS, method="POST", body=json.dumps(body))
+            payload = json.loads(response.text)
+        except Exception as error:
+            failures.append(str(error))
+            continue
+        routes = getattr(client, "workday_routes", None)
+        if isinstance(routes, dict):
+            routes[host] = candidate
+        return payload
+    raise FetchError("; ".join(failures))
+
+
 class WorkdayAdapter(Adapter):
     """Workday CxS search with automatic country and intern facet discovery."""
 
     name = "workday"
     page_size = 20
+    # Searches that fail are retried once at the end of the scan, after this pause.
+    retry_delay_seconds = 8.0
+
+    def _cxs(self, source: Source, path: str, body: Any, result: AdapterResult) -> Any:
+        result.requests += 1
+        options = source.ats_options
+        return workday_request(self.client, options["host"], f"/wday/cxs/{options['tenant']}/{options['site']}{path}", body)
 
     def scan(self, source: Source) -> AdapterResult:
         result = AdapterResult()
         options = source.ats_options
-        host, tenant, site = options["host"], options["tenant"], options["site"]
-        base = f"https://{host}/wday/cxs/{tenant}/{site}"
-        first = self._post_json(f"{base}/jobs", {"appliedFacets": {}, "limit": 1, "offset": 0, "searchText": ""}, result)
+        tenant, site = options["tenant"], options["site"]
+        first_body = {"appliedFacets": {}, "limit": 1, "offset": 0, "searchText": ""}
+        try:
+            first = self._cxs(source, "/jobs", first_body, result)
+        except Exception:
+            time.sleep(self.retry_delay_seconds)
+            first = self._cxs(source, "/jobs", first_body, result)
         if not isinstance(first.get("jobPostings"), list):
             raise ValueError(f"Workday {tenant}/{site} returned no job list")
 
@@ -330,21 +397,32 @@ class WorkdayAdapter(Adapter):
             searches.append((base_facets, query, keyword_pages))
 
         seen: set[str] = set()
+        retry: list[tuple[dict[str, list[str]], str, int]] = []
         for facets, query, max_pages in searches:
             try:
-                self._search(source, base, facets, query, max_pages, seen, result)
+                self._search(source, facets, query, max_pages, seen, result)
+            except Exception:
+                retry.append((facets, query, max_pages))
+        if retry:
+            # Cloudflare 521s from Workday come in short bursts; one late retry clears most.
+            time.sleep(self.retry_delay_seconds)
+        for facets, query, max_pages in retry:
+            try:
+                self._search(source, facets, query, max_pages, seen, result)
             except Exception as error:
                 self._query_failed(result, query or "intern facet listing", error)
+        result.queries = len(searches)
         return result
 
-    def _search(self, source: Source, base: str, facets: dict, query: str, max_pages: int, seen: set[str], result: AdapterResult) -> None:
+    def _search(self, source: Source, facets: dict, query: str, max_pages: int, seen: set[str], result: AdapterResult) -> None:
         options = source.ats_options
         host, tenant, site = options["host"], options["tenant"], options["site"]
         offset = 0
         total: int | None = None
         for page in range(max_pages):
-            payload = self._post_json(
-                f"{base}/jobs",
+            payload = self._cxs(
+                source,
+                "/jobs",
                 {"appliedFacets": facets, "limit": self.page_size, "offset": offset, "searchText": query},
                 result,
             )
@@ -395,10 +473,7 @@ class MicrosoftAdapter(Adapter):
         result = AdapterResult()
         seen: set[str] = set()
         for query in source.ats_options.get("queries", ("product manager intern", "program manager intern")):
-            try:
-                self._scan_query(source, query, seen, result)
-            except Exception as error:
-                self._query_failed(result, query, error)
+            self._run_query(result, query, lambda query=query: self._scan_query(source, query, seen, result))
         return result
 
     def _scan_query(self, source: Source, query: str, seen: set[str], result: AdapterResult) -> None:
@@ -451,10 +526,7 @@ class EightfoldAdapter(Adapter):
         host, domain = source.ats_options["host"], source.ats_options["domain"]
         seen: set[str] = set()
         for query in source.ats_options.get("queries", ("intern", "internship", "product manager")):
-            try:
-                self._scan_query(source, host, domain, query, seen, result)
-            except Exception as error:
-                self._query_failed(result, query, error)
+            self._run_query(result, query, lambda query=query: self._scan_query(source, host, domain, query, seen, result))
         return result
 
     def _scan_query(self, source: Source, host: str, domain: str, query: str, seen: set[str], result: AdapterResult) -> None:
@@ -511,6 +583,7 @@ class SuccessFactorsRssAdapter(Adapter):
         for query in source.ats_options.get("queries", INTERN_QUERIES):
             url = f"https://{host}/services/rss/job/?" + urlencode({"locale": locale, "keywords": query})
             result.requests += 1
+            result.queries += 1
             try:
                 response = self.client.fetch(url, {"Accept": "application/rss+xml, application/xml"})
                 if "<rss" not in response.text[:500]:
@@ -647,6 +720,7 @@ class IbmAdapter(Adapter):
                     "lang": "zz",
                     "_source": ["title", "url", "body", "field_keyword_17", "field_keyword_18", "field_keyword_19"],
                 }
+                result.queries += 1
                 try:
                     payload = self._post_json(self.URL, body, result)
                     hits = payload["hits"]["hits"]
@@ -809,7 +883,7 @@ class DescriptionFetcher:
         )
 
     def _workday(self, host: str, tenant: str, site: str, path: str) -> DescriptionResult:
-        payload = json.loads(self.client.fetch(f"https://{host}/wday/cxs/{tenant}/{site}{path}", {"Accept": "application/json"}).text)
+        payload = workday_request(self.client, host, f"/wday/cxs/{tenant}/{site}{path}")
         info = payload.get("jobPostingInfo") or {}
         locations = [info.get("location", "")] + list(info.get("additionalLocations") or [])
         country = ((info.get("jobRequisitionLocation") or {}).get("country") or {}).get("alpha2Code", "")

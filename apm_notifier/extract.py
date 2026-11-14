@@ -5,7 +5,7 @@ from html import unescape
 import json
 import re
 from typing import Any, Iterable
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit
 
 from .filtering import RoleFilter, location_evidence
 from .models import Job, Source, normalize_space
@@ -176,7 +176,7 @@ DESCRIPTION_KEYS = (
     "qualifications",
     "responsibilities",
 )
-REQ_ID_KEYS = ("requisition_id", "requisitionId", "jobReqId", "id_icims", "job_id", "jobId", "displayJobId", "code")
+REQ_ID_KEYS = ("requisition_id", "requisitionId", "req_id", "jobReqId", "id_icims", "job_id", "jobId", "displayJobId", "code")
 POSTED_KEYS = ("posted_date", "postedDate", "datePosted", "first_published", "publish_time", "releasedDate", "created_at")
 COUNTRY_CODE_KEYS = ("country_code", "countryCode", "country")
 
@@ -203,7 +203,7 @@ def _jobs_from_json(
         title = _first_string(item, TITLE_KEYS)
         if not _matches_title(role_filter, title, source):
             continue
-        identifier = _first_string(item, ("id", "Id", "jobId", "job_id", "requisitionId", "jobPostingId"))
+        identifier = _first_string(item, ("id", "Id", "jobId", "job_id", "requisitionId", "jobPostingId", "req_id", "slug"))
         raw_url = _first_string(item, URL_KEYS)
         if source.url_template and (identifier or raw_url):
             url = source.url_template.format(id=identifier, path=raw_url.lstrip("/"))
@@ -894,8 +894,9 @@ def _jobs_from_walmart_cards(
     parser.feed(text)
     jobs: list[Job] = []
     for identifier, title, spans in parser.cards:
+        # Titles such as "(USA) 2027 Summer Corporate Intern" also name a country.
         location = next(
-            (value for value in spans if _has_location_evidence(value)),
+            (value for value in spans if value != title and _has_location_evidence(value)),
             "",
         )
         if not _matches_title(role_filter, title, source) or not location:
@@ -905,8 +906,11 @@ def _jobs_from_walmart_cards(
                 source_id=source.id,
                 company=source.name,
                 title=title,
-                url=f"{base_url}#{identifier}",
+                # Each card needs its own URL and id: a shared results-page URL would
+                # merge every job on the page into one alert-history entry.
+                url=urljoin(base_url, f"/us/en/jobs/{quote(identifier, safe='-_')}"),
                 location=location,
+                req_id=identifier,
             )
         )
     return jobs

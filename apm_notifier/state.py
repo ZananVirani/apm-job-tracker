@@ -9,7 +9,7 @@ import re
 import sqlite3
 from typing import Any
 
-from .classify import ACCEPT, REJECT, REVIEW, Classification
+from .classify import ACCEPT, REVIEW, Classification
 from .models import Job, SourceResult, canonical_url, normalize_space, utc_now
 
 
@@ -176,6 +176,23 @@ class StateStore:
         for name, definition in HEALTH_COLUMNS.items():
             if name not in columns:
                 self.connection.execute(f"ALTER TABLE source_health ADD COLUMN {name} {definition}")
+        # Each posting is alerted exactly once: drop status-change alerts (closed,
+        # reopened, REVIEW -> ACCEPT, ...) still queued by older versions.
+        self.connection.execute("UPDATE postings SET pending_event = NULL WHERE notified_at IS NOT NULL")
+        self.connection.execute("UPDATE postings SET pending_event = NULL WHERE pending_event IS NOT NULL AND pending_event != 'new'")
+        # Older versions keyed postings found on a shared results page ("results?q=intern#R-123")
+        # by the page URL alone, merging every job on it into one row. Re-key the row by the
+        # job id it currently holds so later sightings of that job still match it.
+        rows = self.connection.execute(
+            "SELECT id, company_key, posting_url FROM postings WHERE req_key IS NULL AND posting_url LIKE '%#%'"
+        ).fetchall()
+        for row in rows:
+            fragment = _norm(row["posting_url"].rsplit("#", 1)[1])
+            if fragment:
+                self.connection.execute(
+                    "UPDATE postings SET req_key = ?, url_key = NULL WHERE id = ?",
+                    (f"{row['company_key']}|req:{fragment}", row["id"]),
+                )
 
     def close(self) -> None:
         self.connection.close()
@@ -193,18 +210,26 @@ class StateStore:
 
     # --- Postings -------------------------------------------------------------------
 
-    def _find(self, keys: tuple[str | None, str | None, str], claimed: set[int]) -> sqlite3.Row | None:
+    def _find(
+        self, keys: tuple[str | None, str | None, str], claimed: set[int], aggregator: bool = False,
+    ) -> sqlite3.Row | None:
         req_key, url_key, ctl_key = keys
         for column, value in (("req_key", req_key), ("url_key", url_key)):
             if value:
                 row = self.connection.execute(f"SELECT * FROM postings WHERE {column} = ? ORDER BY id LIMIT 1", (value,)).fetchone()
                 if row is not None:
                     return row
-        # Reposts of the same role usually get a new requisition id and URL but keep the
-        # title and location. Distinct live postings with identical titles stay separate
-        # because a row can only be claimed once per scan.
+        # A different requisition id or URL is a different posting, even with the same
+        # company, title and location: a repost of a role is alerted again. Title+location
+        # only links copies of one posting that lack a shared identifier:
+        #   * an aggregator listing and the employer's own posting, and
+        #   * a still-open id-less posting whose page URL changed between scans.
         for row in self.connection.execute("SELECT * FROM postings WHERE ctl_key = ? ORDER BY id", (ctl_key,)):
-            if row["id"] not in claimed:
+            if row["id"] in claimed:
+                continue
+            if aggregator or row["source_is_aggregator"]:
+                return row
+            if req_key is None and row["req_key"] is None and row["status"] == "open":
                 return row
         return None
 
@@ -226,10 +251,10 @@ class StateStore:
         return cache
 
     def legacy_notified(self, job: Job) -> bool:
+        # Only the same URL counts: a new posting that shares a title is alerted.
         row = self.connection.execute(
-            "SELECT 1 FROM jobs WHERE notified_at IS NOT NULL AND "
-            "(url = ? OR (lower(company) = lower(?) AND lower(title) = lower(?))) LIMIT 1",
-            (job.url, job.company, job.title),
+            "SELECT 1 FROM jobs WHERE notified_at IS NOT NULL AND url = ? LIMIT 1",
+            (job.url,),
         ).fetchone()
         if row:
             return True
@@ -256,7 +281,7 @@ class StateStore:
         now = now or utc_now()
         claimed = claimed if claimed is not None else set()
         keys = posting_keys(job)
-        existing = self._find(keys, claimed)
+        existing = self._find(keys, claimed, aggregator)
         if existing is not None:
             claimed.add(existing["id"])
             if aggregator and not existing["source_is_aggregator"] and existing["source_id"] != job.source_id:
@@ -308,7 +333,7 @@ class StateStore:
                 notified = self.legacy_notified(job) and result.decision in NOTIFIABLE
                 if notified:
                     fields.update(notified_at=now, notified_decision=result.decision, notified_status=result.status)
-                pending = None if notified else self._event_for(None, None, result.decision, result.status)
+                pending = None if notified else self._event_for(None, result.decision, result.status)
                 fields["pending_event"] = pending
                 columns = ", ".join(fields)
                 placeholders = ", ".join("?" for _ in fields)
@@ -322,46 +347,34 @@ class StateStore:
                 for column in ("req_key", "url_key", "ctl_key"):
                     if existing[column]:
                         fields[column] = existing[column]
-                pending = self._event_for(existing["notified_decision"], existing["notified_status"], result.decision, result.status)
-                if pending is None and existing["pending_event"] and result.decision in NOTIFIABLE and result.status == "open":
-                    pending = existing["pending_event"]  # Keep an undelivered alert pending.
+                pending = self._event_for(existing["notified_at"], result.decision, result.status)
                 fields["pending_event"] = pending
                 assignments = ", ".join(f"{column} = ?" for column in fields)
                 self.connection.execute(f"UPDATE postings SET {assignments} WHERE id = ?", (*fields.values(), posting_id))
         return PostingEvent(posting_id, pending) if pending else None
 
     @staticmethod
-    def _event_for(notified_decision: str | None, notified_status: str | None, decision: str, status: str) -> str | None:
-        was_notified = notified_decision in NOTIFIABLE
-        if decision in NOTIFIABLE and status == "open":
-            if not was_notified:
-                return "new"
-            if notified_status == "closed":
-                return "reopened"
-            if notified_decision != decision:
-                return f"changed: {notified_decision} -> {decision}"
-            return None
-        if not was_notified:
-            return None
-        if status == "closed" and notified_status != "closed":
-            return "closed"
-        if decision == REJECT and notified_decision != REJECT:
-            return f"changed: {notified_decision} -> REJECT"
+    def _event_for(notified_at: str | None, decision: str, status: str) -> str | None:
+        """A posting is alerted once, the first time it is an open ACCEPT/REVIEW.
+
+        Later changes (REVIEW -> ACCEPT, closed, reopened, re-classified) never re-alert.
+        """
+        if notified_at is None and decision in NOTIFIABLE and status == "open":
+            return "new"
         return None
 
     def close_missing(self, source_id: str, cutoff: str, now: str | None = None) -> int:
         """Close open postings from a healthy source that have not been seen since ``cutoff``."""
-        now = now or utc_now()
         rows = self.connection.execute(
-            "SELECT * FROM postings WHERE source_id = ? AND status = 'open' AND last_seen < ?",
+            "SELECT id FROM postings WHERE source_id = ? AND status = 'open' AND last_seen < ?",
             (source_id, cutoff),
         ).fetchall()
         with self.connection:
             for row in rows:
-                pending = self._event_for(row["notified_decision"], row["notified_status"], row["decision"], "closed")
+                # Closing never alerts; an undelivered alert for a vanished posting is dropped.
                 self.connection.execute(
-                    "UPDATE postings SET status = 'closed', pending_event = ? WHERE id = ?",
-                    (pending, row["id"]),
+                    "UPDATE postings SET status = 'closed', pending_event = NULL WHERE id = ?",
+                    (row["id"],),
                 )
         return len(rows)
 

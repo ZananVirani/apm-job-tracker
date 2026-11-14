@@ -39,19 +39,71 @@ class StateStoreTests(unittest.TestCase):
         self.assertEqual(self.store.counts()["total"], 1)
         self.assertEqual(len(self.store.pending_postings()), 1)
 
-    def test_repost_with_new_id_is_the_same_posting_but_live_twins_stay_separate(self) -> None:
+    def test_repost_with_new_id_is_a_new_posting_and_alerts_once(self) -> None:
         original = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "Toronto, ON", description=PM_TEXT, req_id="R-1")
         repost = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/9", "Toronto, ON", description=PM_TEXT, req_id="R-9")
         record(self.store, original)
         self.store.mark_notified([row["id"] for row in self.store.pending_postings()])
-        # A later scan sees only the repost: it reuses the stored posting and does not re-alert.
+        # Same company, title and location but a new requisition: a new posting, alerted.
+        self.assertEqual(record(self.store, repost, claimed=set()).event, "new")
+        self.assertEqual(self.store.counts()["total"], 2)
+        self.store.mark_notified([row["id"] for row in self.store.pending_postings()])
+        # Later sightings of either posting never alert again.
+        self.assertIsNone(record(self.store, original, claimed=set()))
         self.assertIsNone(record(self.store, repost, claimed=set()))
+
+    def test_each_posting_alerts_once_whatever_its_later_changes(self) -> None:
+        review = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "New York, NY", description=PM_TEXT, req_id="R-1")
+        accept = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "Toronto, ON", description=PM_TEXT, req_id="R-1")
+        reject = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "London, UK", description=PM_TEXT, req_id="R-1")
+        self.assertEqual(record(self.store, review).event, "new")
+        self.store.mark_notified([row["id"] for row in self.store.pending_postings()])
+        for job in (accept, reject, review, accept):
+            self.assertIsNone(record(self.store, job, claimed=set()))
+        self.store.close_missing("a", "9999-01-01T00:00:00+00:00")
+        self.assertIsNone(record(self.store, accept, claimed=set()))  # Reopened: still silent.
+        self.assertEqual(self.store.pending_postings(), ())
+
+    def test_undelivered_alert_survives_a_rejection_round_trip_only_as_new(self) -> None:
+        review = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "New York, NY", description=PM_TEXT, req_id="R-1")
+        reject = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "London, UK", description=PM_TEXT, req_id="R-1")
+        record(self.store, review)
+        self.assertIsNone(record(self.store, reject, claimed=set()))  # Never delivered, now rejected.
+        self.assertEqual(self.store.pending_postings(), ())
+        self.assertEqual(record(self.store, review, claimed=set()).event, "new")
+
+    def test_title_location_only_links_copies_without_a_shared_identifier(self) -> None:
+        direct = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/1", "Toronto, ON", description=PM_TEXT, req_id="R-1")
+        copy = Job("agg", "Example", "Product Manager Intern", "https://aggregator.example/x/77", "Toronto, ON", description=PM_TEXT)
+        record(self.store, direct)
+        self.assertIsNone(record(self.store, copy, aggregator=True, claimed=set()))
         self.assertEqual(self.store.counts()["total"], 1)
-        # Within one scan, two live postings with the same title remain distinct.
-        claimed: set[int] = set()
-        record(self.store, repost, claimed=claimed)
-        twin = Job("a", "Example", "Product Manager Intern", "https://example.com/jobs/10", "Toronto, ON", description=PM_TEXT, req_id="R-10")
-        self.assertEqual(record(self.store, twin, claimed=claimed).event, "new")
+        # An id-less posting whose page URL changes between scans stays one posting while open.
+        first = Job("b", "Other", "Product Analyst Intern", "https://other.example/search?session=1", "Toronto, ON", description=PM_TEXT)
+        moved = Job("b", "Other", "Product Analyst Intern", "https://other.example/search?session=2", "Toronto, ON", description=PM_TEXT)
+        self.assertEqual(record(self.store, first).event, "new")
+        self.store.mark_notified([row["id"] for row in self.store.pending_postings()])
+        self.assertIsNone(record(self.store, moved, claimed=set()))
+        self.assertEqual(self.store.counts()["total"], 2)
+
+    def test_migration_drops_queued_status_changes_and_rekeys_merged_rows(self) -> None:
+        now = "2026-11-01T00:00:00+00:00"
+        columns = "source_id, company, company_key, title, req_key, url_key, ctl_key, posting_url, decision, first_seen, last_seen"
+        with self.store.connection:
+            self.store.connection.execute(
+                f"INSERT INTO postings({columns}, pending_event, notified_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("walmart", "Walmart", "walmart", "Corporate Intern", None, "url:https://careers.walmart.com/us/en/results?searchQuery=intern",
+                 "walmart|corporate intern|", "https://careers.walmart.com/us/en/results?searchQuery=intern#R-2697381",
+                 "REVIEW", now, now, "changed: ACCEPT -> REVIEW", now),
+            )
+        self.store.close()
+        self.store = StateStore(self.path)
+        row = self.store.connection.execute("SELECT * FROM postings").fetchone()
+        self.assertIsNone(row["pending_event"])
+        self.assertEqual(row["req_key"], "walmart|req:r 2697381")
+        later = Job("walmart", "Walmart", "Corporate Intern", "https://careers.walmart.com/us/en/jobs/R-2697381", "Bentonville, AR", req_id="R-2697381")
+        record(self.store, later)
+        self.assertEqual(self.store.counts()["total"], 1)
 
     def test_rejects_are_kept_for_audit_without_alerting(self) -> None:
         job = Job("a", "Example", "Software Engineer Intern", "https://example.com/jobs/2", "Toronto, ON")

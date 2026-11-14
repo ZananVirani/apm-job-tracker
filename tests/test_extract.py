@@ -457,7 +457,24 @@ class ExtractJobsTests(unittest.TestCase):
         )
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0].location, "Hoboken, NJ")
-        self.assertTrue(jobs[0].url.endswith("#WD-123"))
+        self.assertEqual(jobs[0].url, "https://careers.walmart.com/us/en/jobs/WD-123")
+        self.assertEqual(jobs[0].req_id, "WD-123")
+
+    def test_walmart_cards_on_one_results_page_keep_distinct_identities(self) -> None:
+        from apm_notifier.state import posting_keys
+
+        html = "".join(
+            f'''<div data-testid="job-card" data-job-id="R-{number}" role="link">
+              <div><span data-testid="job-title">{title}</span></div>
+              <div><span>Bentonville, AR</span></div>
+            </div>'''
+            for number, title in (("1", "(USA) Product Manager Intern"), ("2", "Product Marketing Intern"))
+        )
+        jobs = extract_jobs(html, "text/html", self.source, "https://careers.walmart.com/us/en/results?searchQuery=intern", self.filter)
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(len({posting_keys(job)[0] for job in jobs}), 2)
+        self.assertEqual(len({posting_keys(job)[1] for job in jobs}), 2)
+        self.assertEqual([job.location for job in jobs], ["Bentonville, AR", "Bentonville, AR"])
 
     def test_extracts_ea_avature_job_card_with_location(self) -> None:
         html = """

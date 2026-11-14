@@ -17,7 +17,7 @@ from .adapters import DescriptionFetcher, DescriptionResult, enrich, make_adapte
 from .classify import ACCEPT, REJECT, REVIEW, Classification, classify, plain_text
 from .export import export_matches
 from .extract import CareerHTMLParser, LinkedInJobCardParser, extract_jobs, response_has_job_signal
-from .fetch import BrowserRenderer, HttpClient
+from .fetch import BrowserRenderer, FetchError, HttpClient
 from .filtering import RoleFilter
 from .models import FetchResult, Job, Source, SourceResult, utc_now
 from .notify import DigestEntry, NotificationManager
@@ -256,6 +256,7 @@ class Monitor:
     # --- Per-source work (runs in worker threads) -------------------------------------
 
     def _check_source(self, source: Source) -> SourceOutcome:
+        warnings: list[str] = []
         if source.ats:
             adapter = make_adapter(source.ats, self.client, self.role_filter)
             errors: list[str] = []
@@ -263,13 +264,17 @@ class Monitor:
                 scanned = adapter.scan(source)
                 jobs, raw_count, complete = scanned.jobs, scanned.raw_count, scanned.complete
                 errors.extend(scanned.errors)
+                if errors and scanned.mostly_succeeded:
+                    # Most searches worked, so the company was checked; a stray failed
+                    # query is retried next run instead of raising an outage alert.
+                    warnings, errors = errors, []
             except Exception as error:
                 jobs, raw_count, complete = [], -1, False
                 errors.append(str(error))
             fetched, expected = (0, 1) if errors and not jobs else (1, 1)
         else:
-            jobs, fetched, errors = self._scan_legacy(source)
-            raw_count, complete, expected = -1, True, len(source.urls)
+            jobs, fetched, errors, warnings, complete = self._scan_legacy(source)
+            raw_count, expected = -1, len(source.urls)
         unique: dict[tuple, Job] = {}
         for job in jobs:
             # Aggregator copies of employers whose full board is read by a structured
@@ -300,6 +305,7 @@ class Monitor:
             errors=tuple(errors),
             raw_count=raw_count,
             expected_urls=expected,
+            warnings=tuple(warnings),
         )
         return SourceOutcome(result, processed, deferred, complete)
 
@@ -366,13 +372,17 @@ class Monitor:
                 return entry
         return None
 
-    def _scan_legacy(self, source: Source) -> tuple[list[Job], int, list[str]]:
+    def _scan_legacy(self, source: Source) -> tuple[list[Job], int, list[str], list[str], bool]:
         jobs: dict[str, Job] = {}
         errors: list[str] = []
+        warnings: list[str] = []
+        complete = True
         fetched = 0
         for index, url in enumerate(source.urls):
+            pages = 0
             try:
                 for response in self._source_responses(source, index, url):
+                    pages += 1
                     for job in extract_jobs(response.text, response.content_type, source, response.final_url, self.role_filter):
                         if source.verify_job_links and not self.client.url_exists(job.url):
                             LOGGER.warning("Skipping confirmed dead back-check link: %s", job.url)
@@ -380,8 +390,15 @@ class Monitor:
                         jobs[job.fingerprint] = job
                 fetched += 1
             except Exception as error:
-                errors.append(str(error))
-        return list(jobs.values()), fetched, errors
+                if source.paginate and pages and "linkedin.com/jobs-guest/" in url and isinstance(error, FetchError):
+                    # A later results page failed (LinkedIn throttles deep pagination):
+                    # keep the pages already read and retry the rest next run.
+                    warnings.append(f"stopped after {pages} page(s): {error}")
+                    complete = False
+                    fetched += 1
+                else:
+                    errors.append(str(error))
+        return list(jobs.values()), fetched, errors, warnings, complete
 
     def run_forever(self, interval_seconds: int) -> None:
         LOGGER.info("Starting monitor loop; checking every %d seconds", interval_seconds)
@@ -413,6 +430,8 @@ class Monitor:
             f", {outcome.deferred} deferred" if outcome.deferred else "",
             f"; errors: {'; '.join(result.errors)[:500]}" if result.errors else "",
         )
+        if result.warnings:
+            LOGGER.warning("%s: partial scan (not alerted): %s", result.source.name, "; ".join(result.warnings)[:500])
 
     def _log_summary(self, outcomes: list[SourceOutcome], decisions: Counter[str], delivered: int, pending: int, skipped: int) -> None:
         failed = [outcome.result for outcome in outcomes if not outcome.result.succeeded]

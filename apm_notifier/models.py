@@ -134,6 +134,9 @@ class SourceResult:
     # successful runs usually means a broken adapter rather than a quiet company.
     raw_count: int = -1
     expected_urls: int = -1
+    # Non-fatal problems (a minority of searches or a later results page failed): logged,
+    # and missing postings are not closed, but the company still counts as checked.
+    warnings: tuple[str, ...] = ()
 
     @property
     def succeeded(self) -> bool:

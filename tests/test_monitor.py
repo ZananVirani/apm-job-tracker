@@ -154,7 +154,7 @@ class DeliveryTests(StoreCase):
         self.assertEqual(self.store.counts()["total"], 0)
         self.assertFalse(self.store.is_initialized())
 
-    def test_review_that_becomes_accept_alerts_as_a_change(self) -> None:
+    def test_review_that_becomes_accept_does_not_alert_again(self) -> None:
         silent = listing("1", location="New York, NY", description="Write PRDs, own the roadmap and prioritize the backlog.")
         sponsored = dict(silent, description=silent["description"] + " Visa sponsorship is available.")
         client = StaticClient(json_jobs(silent))
@@ -164,7 +164,8 @@ class DeliveryTests(StoreCase):
         self.assertEqual(notifier.digests[0][0].decision, REVIEW)
         client.text = json_jobs(sponsored)
         monitor.run_once()
-        self.assertEqual(notifier.digests[1][0].event, "changed: REVIEW -> ACCEPT")
+        self.assertEqual(len(notifier.digests), 1)
+        self.assertEqual([row["decision"] for row in self.store.open_matches()], [ACCEPT])
 
     def _winter_then_summer(self, summer_id: str) -> FakeNotifier:
         winter = listing("W1", title="Intern - Product Management", description=PM_TEXT + " This 4-month co-op starts January 2027.")
@@ -208,7 +209,7 @@ class DeliveryTests(StoreCase):
         self.assertEqual(client.calls, 2)  # The repost's own description was fetched.
         self.assertEqual([row["decision"] for row in self.store.open_matches()], [ACCEPT])
 
-    def test_notified_posting_that_disappears_alerts_as_closed(self) -> None:
+    def test_notified_posting_that_disappears_closes_silently(self) -> None:
         client = StaticClient(json_jobs(listing("1")))
         notifier = FakeNotifier()
         monitor = monitor_for([source()], client, self.store, notifier, close_after_hours=1)
@@ -216,7 +217,7 @@ class DeliveryTests(StoreCase):
         self.store.connection.execute("UPDATE postings SET last_seen = '2000-01-01T00:00:00+00:00'")
         client.text = json_jobs()
         monitor.run_once()
-        self.assertEqual(notifier.digests[1][0].event, "closed")
+        self.assertEqual(len(notifier.digests), 1)
         self.assertEqual(self.store.open_matches(), ())
 
     def test_priority_digest_is_sent_before_slow_source_finishes(self) -> None:
@@ -322,6 +323,53 @@ class LegacyPaginationTests(unittest.TestCase):
     def test_linkedin_empty_fragment_is_a_valid_end_of_results(self) -> None:
         src = Source("revolut", "Revolut", ("https://www.linkedin.com/jobs-guest/jobs/api/search",), "https://www.revolut.com/careers", paginate=True)
         self.assertTrue(self.check(src, StaticClient("<!DOCTYPE html>\n\n<!---->  ", "text/html")).result.succeeded)
+
+    def test_linkedin_keeps_earlier_pages_when_a_later_page_is_throttled(self) -> None:
+        from apm_notifier.fetch import FetchError
+
+        card = """<li><div class="base-search-card job-search-card">
+          <a class="base-card__full-link" href="https://www.linkedin.com/jobs/view/product-analyst-intern-at-linkedin-445?position=1">
+            <span class="sr-only">Product Analyst Intern</span></a>
+          <h3 class="base-search-card__title">Product Analyst Intern</h3>
+          <span class="job-search-card__location">Toronto, Ontario, Canada</span>
+        </div></li>"""
+
+        class ThrottledClient(StaticClient):
+            def fetch(self, url, extra_headers=None, method="GET", body=""):
+                self.calls += 1
+                if self.calls > 1:
+                    raise FetchError(f"{url}: HTTP Error 429: Too Many Requests")
+                return FetchResult(url, url, "text/html", card)
+
+        src = Source("linkedin", "LinkedIn", ("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=intern&start=0",), "https://careers.linkedin.com/", paginate=True)
+        with patch("apm_notifier.monitor.Monitor._process", side_effect=lambda job: ProcessedJob(job, None)):
+            outcome = self.check(src, ThrottledClient(""))
+        self.assertTrue(outcome.result.succeeded)
+        self.assertFalse(outcome.complete)  # Unseen postings are not closed after a partial scan.
+        self.assertEqual(len(outcome.processed), 1)
+        self.assertIn("429", outcome.result.warnings[0])
+
+    def test_structured_scan_with_a_minority_of_failed_searches_is_degraded_not_failed(self) -> None:
+        from apm_notifier.adapters import AdapterResult
+
+        def adapter_with(queries, failed):
+            class Adapter:
+                def scan(self, src):
+                    job = Job(src.id, src.name, "Product Manager Intern", "https://jobs.example.com/1", "Toronto, ON", req_id="1")
+                    return AdapterResult(jobs=[job], raw_count=1, errors=["query 'co-op': HTTP Error 521"] * failed, complete=not failed, queries=queries, failed_queries=failed)
+            return Adapter()
+
+        src = source(ats="workday")
+        for queries, failed, succeeded in ((6, 1, True), (6, 3, False), (6, 0, True)):
+            with self.subTest(failed=failed):
+                with (
+                    patch("apm_notifier.monitor.make_adapter", return_value=adapter_with(queries, failed)),
+                    patch("apm_notifier.monitor.Monitor._process", side_effect=lambda job: ProcessedJob(job, None)),
+                ):
+                    outcome = self.check(src, StaticClient(""))
+                self.assertEqual(outcome.result.succeeded, succeeded)
+                self.assertEqual(bool(outcome.result.warnings), succeeded and bool(failed))
+                self.assertEqual(outcome.complete, not failed)
 
     def test_scans_later_pages_and_rejects_repeated_pages(self) -> None:
         for offset_key, total_key in (("offset", "total"), ("paginationStart", "maxCount")):

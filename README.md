@@ -20,7 +20,7 @@ Every decision stores a one-line reason and the exact quoted text that triggered
 
 ## Coverage
 
-`config/sources.json` holds 25 must-include companies (scanned every run) and about 110 additional companies (scanned at most hourly). Structured adapters read official public job-board APIs — Greenhouse, Lever, Ashby, SmartRecruiters, Workday CxS (with automatic Canada/US and intern facet discovery), SAP SuccessFactors RSS, Microsoft and Eightfold — and fetch the full description for each candidate. A few sites still use the legacy HTML/JSON extractors. The Simplify Summer 2027 list and a community tracker act as secondary discovery sources; employers found only there are added to a company registry.
+`config/sources.json` holds 31 must-include companies (scanned every run) and about 120 additional companies (scanned at most hourly), including every company listed on [apmlist.com](https://apmlist.com/) (a few through a parent company's board, e.g. Mojang via Microsoft and Splunk via Cisco). Structured adapters read official public job-board APIs — Greenhouse, Lever, Ashby, SmartRecruiters, Workday CxS (with automatic Canada/US and intern facet discovery), SAP SuccessFactors RSS, Microsoft and Eightfold — and fetch the full description for each candidate. A few sites still use the legacy HTML/JSON extractors. The Simplify Summer 2027 list and a community tracker act as secondary discovery sources; employers found only there are added to a company registry.
 
 Disabled entries document companies whose careers sites could not be read politely (no public board, login or bot walls, robots.txt). `python3 -m apm_notifier report` shows which companies have zero matching postings versus failing adapters.
 
@@ -29,8 +29,11 @@ Disabled entries document companies whose careers sites could not be read polite
 - Must-include companies are checked on every run (every five minutes in the cloud); additional companies at most every `ADDITIONAL_SCAN_MINUTES`.
 - Requests identify themselves with a descriptive User-Agent, are spaced at least `HOST_INTERVAL_SECONDS` apart per host (3s for LinkedIn and Microsoft), retry with exponential backoff, and check robots.txt before fetching any HTML job page. Logins, CAPTCHAs and paywalls are never bypassed.
 - Descriptions are cached in SQLite and refreshed every `DESCRIPTION_REFRESH_HOURS`; at most `MAX_DESCRIPTION_FETCHES` are fetched per run and the rest are picked up next run.
-- Postings are deduplicated by company + requisition id, then canonical URL, then company + title + location, so reposts and aggregator copies do not re-alert.
-- Alerts are sent for new ACCEPT/REVIEW postings and for status changes (REVIEW → ACCEPT, closed, reopened). The digest is sorted by must-include company, core title, GTA, then newest.
+- Each posting is alerted **exactly once**, the first time it is an open ACCEPT/REVIEW. Later changes (REVIEW → ACCEPT, closed, reopened, re-classified) are recorded but never re-alerted.
+- A posting is identified by company + requisition id, then by its job URL. A repost with a new requisition id or URL is a new posting and is alerted, even when the company, title and location match an earlier one. Title + location only links an aggregator copy to the employer's own posting, or an open posting with no requisition id whose page URL changed.
+- The digest is sorted by must-include company, core title, GTA, then newest.
+- Workday's US clusters (`wd1`, `wd5`, …) sit behind Cloudflare and sometimes answer `HTTP 521`. Cloudflare 52x errors are retried with backoff. A Workday request that still fails moves to the same API on `wdN.myworkdaysite.com`, Workday's alternate domain, and any searches that failed are retried once at the end of the scan.
+- A company counts as *down* (and triggers a coverage alert after 6 hours) only when most of its scan failed. A minority of failed searches, or a LinkedIn results page throttled after earlier pages were read, is logged as a partial scan; its unseen postings are not closed.
 - Each run writes `job_matches.csv` and `job_matches.json` (all open ACCEPT/REVIEW postings with the full schema), logs a per-run summary, and warns when an adapter returns zero postings for `ZERO_RESULT_WARN_RUNS` runs in a row.
 - TikTok's campus feed still runs first and its digest is sent as soon as it finishes.
 
