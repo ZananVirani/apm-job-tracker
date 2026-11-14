@@ -202,14 +202,26 @@ FINAL_YEAR = re.compile(
     re.IGNORECASE,
 )
 
+_NEGATION = (
+    r"(?:will\s+not|won'?t|does\s+not|doesn'?t|do\s+not|don'?t|cannot|can\s*not|can'?t|is\s+not|are\s+not|"
+    r"(?:is|are)?\s*unable\s+to|(?:is|are)?\s*not\s+able\s+to|not\s+in\s+a\s+position\s+to|"
+    r"(?:is|are)?\s*not\s+(?:currently\s+)?(?:offering|providing|sponsoring|supporting))"
+)
+_SPONSORSHIP_KIND = r"(?:visa|immigration|employment|work|h-?1b|work\s+authori[sz]ation|employer)"
 US_SPONSORSHIP_DENIED = re.compile(
     r"\b(?:not\s+(?:be\s+)?eligible\s+for\s+(?:\w+\s+){0,3}(?:visa|immigration|work\s+permit)?\s*sponsorship|"
-    r"(?:will|does|do|can|cannot|can't|won't|is\s+unable\s+to|are\s+unable\s+to)\s*(?:not\s+)?(?:provide|offer|sponsor|support|pursue)\w*\s+(?:\w+\s+){0,4}?"
-    r"(?:visa|immigration|employment|h-?1b|work\s+authori[sz]ation)?\s*sponsorship|"
-    r"(?:unable|not\s+able)\s+to\s+sponsor|cannot\s+sponsor|no\s+(?:visa\s+|immigration\s+)?sponsorship|"
-    r"without\s+(?:the\s+)?(?:need\s+for\s+|requiring\s+)?(?:current\s+or\s+future\s+|future\s+|any\s+)?(?:visa\s+|employer\s+|immigration\s+|company\s+)?sponsorship|"
-    r"(?:must|required\s+to)\s+be\s+(?:a\s+)?u\.?s\.?\s+(?:citizens?|persons?)|u\.?s\.?\s+citizenship\s+(?:is\s+)?required|"
+    + _NEGATION
+    + r"\s+(?:currently\s+|now\s+)?(?:provide|offer|sponsor|support|pursue|consider|accommodate)\w*\s+(?:[\w/-]+\s+){0,5}?"
+    r"(?:" + _SPONSORSHIP_KIND + r"\s+)?(?:sponsorship|visas?|work\s+permits?)|"
+    r"(?:unable|not\s+able)\s+to\s+sponsor|cannot\s+sponsor|(?:do|does|will)\s+not\s+sponsor|"
+    r"no\s+(?:" + _SPONSORSHIP_KIND + r"\s+)?sponsorship|"
+    r"(?:" + _SPONSORSHIP_KIND + r"\s+)?sponsorship\s+(?:is\s+|will\s+)?(?:not|un)\s*(?:be\s+)?(?:available|provided|offered|supported|considered)|"
+    r"(?:not\s+)?(?:requir(?:e|es|ing)|need(?:s|ing)?)\s+(?:\w+\s+){0,6}?sponsorship\s+(?:\w+\s+){0,8}?(?:will\s+not|are\s+not|is\s+not|cannot|won'?t|not)\s+(?:be\s+)?(?:considered|eligible)|"
+    r"must\s+not\s+(?:now\s+or\s+in\s+the\s+future\s+)?require\s+(?:\w+\s+){0,3}sponsorship|"
+    r"without\s+(?:the\s+)?(?:need\s+(?:for|of)\s+|requiring\s+|needing\s+|require\s+)?(?:current\s+or\s+future\s+|now\s+or\s+in\s+the\s+future\s+|future\s+|any\s+|an?\s+)?(?:" + _SPONSORSHIP_KIND + r"\s+)?sponsorship|"
+    r"(?:must|required\s+to)\s+be\s+(?:a\s+)?u\.?s\.?\s+(?:citizens?|persons?|nationals?)|u\.?s\.?\s+citizenship\s+(?:is\s+)?required|"
     r"requires?\s+u\.?s\.?\s+citizenship|(?:must|required\s+to)\s+(?:be|have)\s+(?:a\s+)?(?:u\.?s\.?\s+)?(?:citizen|permanent\s+resident|green\s+card)|"
+    r"(?:open|available|limited)\s+(?:only\s+)?to\s+(?:u\.?s\.?\s+)?citizens|"
     r"(?:active|current|ability\s+to\s+obtain(?:\s+and\s+maintain)?\s+an?)\s+(?:\w+\s+){0,2}security\s+clearance|"
     r"does\s+not\s+offer\s+sponsorship|citizenship\s+is\s+required|itar|export\s+control\w*\s+(?:regulations\s+)?requir\w*)\b",
     re.IGNORECASE,
@@ -217,7 +229,7 @@ US_SPONSORSHIP_DENIED = re.compile(
 US_SPONSORSHIP_OFFERED = re.compile(
     r"\b(?:(?:visa|immigration|h-?1b)\s+sponsorship\s+(?:is\s+)?(?:available|provided|offered|may\s+be\s+(?:available|provided))|"
     r"(?:will|can|may)\s+(?:provide|offer|sponsor|support)\s+(?:\w+\s+){0,3}(?:visa|immigration)?\s*sponsorship|"
-    r"offers?\s+sponsorship|sponsorship\s+(?:is\s+)?available|cpt|(?:stem\s+)?opt\b|curricular\s+practical\s+training|"
+    r"offers?\s+sponsorship|sponsorship\s+(?:is\s+)?available|cpt|(?:stem\s+)?opt(?![- ](?:in|out))\b|curricular\s+practical\s+training|"
     r"international\s+students\s+(?:are\s+)?(?:welcome|eligible|encouraged))\b",
     re.IGNORECASE,
 )
@@ -539,6 +551,13 @@ def evaluate_graduation(text: str, grad_year: int, grad_month: int) -> tuple[str
 # --- Main entry point ---------------------------------------------------------------
 
 
+# Adjacent titles the user explicitly wants from specific companies, even when the
+# description does not read as product work (company name -> category labels).
+REQUESTED_ADJACENT: dict[str, frozenset[str]] = {
+    "teck resources limited": frozenset({"Business Analyst"}),
+}
+
+
 def classify(
     job: Job,
     today: date | None = None,
@@ -566,6 +585,8 @@ def classify(
         else:
             result._flag(REJECT, f"Not a product role: {category.label}", title)
             return result
+    elif category.label in REQUESTED_ADJACENT.get(normalize_space(job.company).casefold(), ()):
+        result._flag(ACCEPT, f"{category.label} title (requested for {job.company})")
     elif category.category == "other" or category.needs_product_description:
         threshold = 4 if category.category == "other" else 2
         if not result.description_available:
@@ -671,13 +692,14 @@ def classify(
         authorization = CANADA_AUTHORIZATION.search(text) if text else None
         if authorization:
             result.quotes.append(quote(text, authorization.start(), authorization.end()))
+    elif (sponsorship_text := "\n".join(filter(None, (job.sponsorship_hint, text)))) and (
+        denied := US_SPONSORSHIP_DENIED.search(sponsorship_text)
+    ):
+        # Any non-Canadian role (US or unstated location) that denies sponsorship is out.
+        result._flag(REJECT, "Role without visa sponsorship / citizenship required", quote(sponsorship_text, denied.start(), denied.end()))
+        return result
     elif "US" in countries:
-        sponsorship_text = "\n".join(filter(None, (job.sponsorship_hint, text)))
-        denied = US_SPONSORSHIP_DENIED.search(sponsorship_text)
         offered = US_SPONSORSHIP_OFFERED.search(sponsorship_text)
-        if denied:
-            result._flag(REJECT, "US role without visa sponsorship / citizenship required", quote(sponsorship_text, denied.start(), denied.end()))
-            return result
         if evidence.remote:
             result._flag(ACCEPT, "US remote")
         elif offered:

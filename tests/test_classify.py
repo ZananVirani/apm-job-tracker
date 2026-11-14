@@ -228,3 +228,40 @@ class AdditionalClassifierCases(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SponsorshipDenialPhrasings(unittest.TestCase):
+    BASE = PM_DUTIES + "Requirements:\n- Pursuing a Bachelor's degree, graduating in 2028.\n- "
+
+    def test_common_denials_are_rejected(self) -> None:
+        for phrase in (
+            "We will not sponsor applicants for work visas.",
+            "Visa sponsorship is not available for this position.",
+            "Applicants who now or in the future require sponsorship will not be considered.",
+            "Candidates requiring visa sponsorship are not eligible for this role.",
+            "We do not provide H-1B sponsorship.",
+        ):
+            with self.subTest(phrase=phrase):
+                result = classify(posting("Product Manager Intern 2027", "New York, NY", self.BASE + phrase), TODAY)
+                self.assertEqual(result.decision, REJECT)
+
+    def test_sponsorship_offer_is_not_mistaken_for_denial(self) -> None:
+        result = classify(posting("Product Manager Intern 2027", "New York, NY", self.BASE + "We will provide visa sponsorship."), TODAY)
+        self.assertNotEqual(result.decision, REJECT)
+
+    def test_denial_with_unstated_location_is_rejected(self) -> None:
+        result = classify(posting("Product Manager Intern 2027", "", self.BASE + "Must be a U.S. citizen."), TODAY)
+        self.assertEqual(result.decision, REJECT)
+
+
+class RequestedCompanyTitles(unittest.TestCase):
+    def test_teck_business_analyst_coop_is_accepted_without_product_signals(self) -> None:
+        job = Job(
+            "teck", "Teck Resources Limited", "Business Analyst Co-op", "https://jobs.teck.com/job/1",
+            "Vancouver, BC, CA",
+            description="Join our Vancouver office for an 8-month co-op work term. You will document business "
+            "processes, gather requirements from stakeholders and support reporting for mining operations. "
+            "Open to students currently enrolled in a post-secondary program returning to school after the term.",
+        )
+        result = classify(job, TODAY)
+        self.assertNotEqual(result.decision, REJECT, result.reason)

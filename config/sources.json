@@ -971,7 +971,7 @@
     {
       "id": "bmo",
       "name": "BMO",
-      "tier": "additional",
+      "tier": "must",
       "ats": "workday",
       "host": "bmo.wd3.myworkdayjobs.com",
       "tenant": "bmo",
@@ -979,6 +979,22 @@
       "career_url": "https://bmo.wd3.myworkdayjobs.com/External",
       "added_on": "2026-11-12",
       "discovered_via": "requested list; Workday site found via web search"
+    },
+    {
+      "id": "teck",
+      "name": "Teck Resources Limited",
+      "tier": "must",
+      "ats": "successfactors",
+      "host": "jobs.teck.com",
+      "career_url": "https://jobs.teck.com/",
+      "queries": [
+        "co-op",
+        "business analyst",
+        "intern",
+        "student"
+      ],
+      "added_on": "2026-11-13",
+      "discovered_via": "requested watchlist (Business Analyst co-ops, Greater Vancouver); SuccessFactors RSS found by probing"
     },
     {
       "id": "national-bank",
