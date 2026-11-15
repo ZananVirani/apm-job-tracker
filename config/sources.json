@@ -521,6 +521,20 @@
       "tier": "additional"
     },
     {
+      "id": "bny",
+      "name": "BNY",
+      "career_url": "https://eofe.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/BNY-Careers",
+      "url_template": "https://eofe.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/BNY-Careers/job/{id}",
+      "urls": [
+        "https://eofe.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,offset=0,sortBy=POSTING_DATES_DESC,keyword=internship",
+        "https://eofe.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,offset=0,sortBy=POSTING_DATES_DESC,keyword=product%20management%20intern"
+      ],
+      "tier": "additional",
+      "added_on": "2026-11-15",
+      "discovered_via": "requested; bny.com careers links to Oracle Recruiting Cloud site BNY-Careers (siteNumber CX_1001)",
+      "note": "'intern' alone also matches 'International' (575 hits), so the search uses 'internship', which returns every internship in one 100-row page."
+    },
+    {
       "id": "sap",
       "name": "SAP",
       "tier": "additional",
@@ -1418,6 +1432,17 @@
       "host": "explore.jobs.netflix.net",
       "domain": "netflix.com",
       "career_url": "https://explore.jobs.netflix.net/careers"
+    },
+    {
+      "id": "netapp",
+      "name": "NetApp",
+      "tier": "additional",
+      "ats": "eightfold",
+      "host": "netapp.eightfold.ai",
+      "domain": "netapp.com",
+      "career_url": "https://netapp.eightfold.ai/careers",
+      "added_on": "2026-11-15",
+      "discovered_via": "requested; careers.netapp.com links to its Eightfold board"
     },
     {
       "id": "nike",
