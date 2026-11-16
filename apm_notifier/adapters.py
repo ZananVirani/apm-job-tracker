@@ -938,7 +938,10 @@ class DescriptionFetcher:
             except json.JSONDecodeError:
                 continue
             for item in payload if isinstance(payload, list) else payload.get("@graph", [payload]) if isinstance(payload, dict) else []:
-                if isinstance(item, dict) and item.get("@type") in {"JobPosting", ["JobPosting"]}:
+                types = item.get("@type") if isinstance(item, dict) else None
+                # "@type" may be a string or a list; a set literal holding a list raised
+                # TypeError, so every JSON-LD job page failed and its posting was deferred.
+                if "JobPosting" in (types if isinstance(types, list) else [types]):
                     locations = item.get("jobLocation") or []
                     if isinstance(locations, dict):
                         locations = [locations]

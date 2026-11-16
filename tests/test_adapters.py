@@ -141,6 +141,27 @@ class WorkdayAdapterTests(unittest.TestCase):
         self.assertEqual((result.country_codes, result.close_date, result.req_id), (("CA",), "2026-11-22", "R1"))
 
 
+class GenericDescriptionTests(unittest.TestCase):
+    def _fetch(self, json_ld: str):
+        page = f'<html><script type="application/ld+json">{json_ld}</script></html>'
+        client = RecordingClient(lambda url, body: page)
+        client.allowed_by_robots = lambda url: True
+        return DescriptionFetcher(client).fetch_url("https://jobs.example.com/job/toronto/pm-intern/1/2")
+
+    def test_reads_json_ld_job_posting_with_string_or_list_type(self) -> None:
+        for job_type in ('"JobPosting"', '["JobPosting"]'):
+            with self.subTest(job_type=job_type):
+                result = self._fetch(
+                    '{"@type": %s, "description": "Own the roadmap", "validThrough": "2026-12-01T00:00",'
+                    ' "jobLocation": {"address": {"addressLocality": "Toronto", "addressCountry": "CA"}}}' % job_type
+                )
+                self.assertEqual((result.text, result.close_date, result.location), ("Own the roadmap", "2026-12-01", "Toronto, CA"))
+
+    def test_ignores_non_job_json_ld(self) -> None:
+        result = self._fetch('{"@type": ["Organization"], "name": "Example"}')
+        self.assertEqual(result.text, "")
+
+
 class OtherAdapterTests(unittest.TestCase):
     def test_greenhouse_includes_descriptions_and_requisition(self) -> None:
         payload = {"jobs": [
