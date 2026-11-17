@@ -547,6 +547,19 @@
       "note": "jobs.sap.com returns HTTP 403 to clients that identify as a bot; not scraped."
     },
     {
+      "id": "samsung",
+      "name": "Samsung",
+      "tier": "additional",
+      "ats": "workday",
+      "host": "sec.wd3.myworkdayjobs.com",
+      "tenant": "sec",
+      "site": "Samsung_Careers",
+      "domain": "samsung.com",
+      "career_url": "https://sec.wd3.myworkdayjobs.com/Samsung_Careers",
+      "added_on": "2026-11-17",
+      "discovered_via": "requested; Samsung's global Workday board, which also carries Samsung Electronics Canada (Mississauga) and US subsidiaries"
+    },
+    {
       "id": "servicenow",
       "name": "ServiceNow",
       "tier": "additional",
