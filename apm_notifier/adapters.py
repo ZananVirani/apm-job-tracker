@@ -466,27 +466,40 @@ class WorkdayAdapter(Adapter):
                 result.complete = False
 
 
-class MicrosoftAdapter(Adapter):
-    name = "microsoft"
+class PcsxAdapter(Adapter):
+    """Eightfold's newer careers search API (``/api/pcsx/search``), e.g. Autodesk.
+
+    Some Eightfold boards answer the older ``/api/apply/v2`` API with 403 but serve this one.
+    """
+
+    name = "pcsx"
+    default_host = ""
+    default_domain = ""
+    default_queries: tuple[str, ...] = ("intern", "internship", "co-op", "product manager intern")
+
+    def _board(self, source: Source) -> tuple[str, str]:
+        options = source.ats_options
+        return options.get("host", self.default_host), options.get("domain", self.default_domain)
 
     def scan(self, source: Source) -> AdapterResult:
         result = AdapterResult()
         seen: set[str] = set()
-        for query in source.ats_options.get("queries", ("product manager intern", "program manager intern")):
+        for query in source.ats_options.get("queries", self.default_queries):
             self._run_query(result, query, lambda query=query: self._scan_query(source, query, seen, result))
         return result
 
     def _scan_query(self, source: Source, query: str, seen: set[str], result: AdapterResult) -> None:
+        host, domain = self._board(source)
         start = 0
         for _ in range(int(source.ats_options.get("max_pages", 3))):
-            url = "https://apply.careers.microsoft.com/api/pcsx/search?" + urlencode(
-                {"domain": "microsoft.com", "query": query, "location": "", "start": start, "sort_by": "relevance"}
+            url = f"https://{host}/api/pcsx/search?" + urlencode(
+                {"domain": domain, "query": query, "location": "", "start": start, "sort_by": "relevance"}
             )
             payload = self._get_json(url, result)
             data = payload.get("data") or {}
             rows = data.get("positions")
             if not isinstance(rows, list):
-                raise ValueError("Microsoft careers API returned no positions")
+                raise ValueError(f"Eightfold search API at {host} returned no positions")
             for row in rows:
                 identifier = str(row.get("id", ""))
                 if identifier in seen:
@@ -504,18 +517,25 @@ class MicrosoftAdapter(Adapter):
                         source_id=source.id,
                         company=source.name,
                         title=title,
-                        url=f"https://apply.careers.microsoft.com/careers/job/{identifier}",
+                        url=f"https://{host}/careers/job/{identifier}",
                         location="; ".join(row.get("locations") or []),
                         req_id=str(row.get("displayJobId") or identifier),
                         remote=(str(row.get("workLocationOption", "")).casefold() == "remote") or None,
                         country_codes=codes,
                         posted_date=_epoch_date(row.get("postedTs")),
-                        detail_ref=f"microsoft:{identifier}",
+                        detail_ref=f"pcsx:{host}:{domain}:{identifier}",
                     )
                 )
             start += len(rows)
             if not rows or start >= int(data.get("count") or 0):
                 break
+
+
+class MicrosoftAdapter(PcsxAdapter):
+    name = "microsoft"
+    default_host = "apply.careers.microsoft.com"
+    default_domain = "microsoft.com"
+    default_queries = ("product manager intern", "program manager intern")
 
 
 class EightfoldAdapter(Adapter):
@@ -767,6 +787,7 @@ ADAPTERS: dict[str, type[Adapter]] = {
         SmartRecruitersAdapter,
         WorkdayAdapter,
         MicrosoftAdapter,
+        PcsxAdapter,
         EightfoldAdapter,
         SuccessFactorsRssAdapter,
         AtlassianAdapter,
@@ -812,7 +833,10 @@ class DescriptionFetcher:
             _, company, identifier = ref.split(":", 2)
             return self._smartrecruiters(company, identifier)
         if ref.startswith("microsoft:"):
-            return self._microsoft(ref.split(":", 1)[1])
+            return self._pcsx("apply.careers.microsoft.com", "microsoft.com", ref.split(":", 1)[1])
+        if ref.startswith("pcsx:"):
+            _, host, domain, identifier = ref.split(":", 3)
+            return self._pcsx(host, domain, identifier)
         if ref.startswith("eightfold:"):
             _, host, domain, identifier = ref.split(":", 3)
             payload = json.loads(self.client.fetch(f"https://{host}/api/apply/v2/jobs/{identifier}?domain={quote(domain)}", {"Accept": "application/json"}).text)
@@ -913,10 +937,10 @@ class DescriptionFetcher:
             closed=payload.get("active") is False,
         )
 
-    def _microsoft(self, identifier: str) -> DescriptionResult:
+    def _pcsx(self, host: str, domain: str, identifier: str) -> DescriptionResult:
         payload = json.loads(
             self.client.fetch(
-                f"https://apply.careers.microsoft.com/api/pcsx/position_details?position_id={identifier}&domain=microsoft.com&hl=en",
+                f"https://{host}/api/pcsx/position_details?" + urlencode({"position_id": identifier, "domain": domain, "hl": "en"}),
                 {"Accept": "application/json"},
             ).text
         )

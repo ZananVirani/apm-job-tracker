@@ -6,6 +6,8 @@ from apm_notifier.adapters import (
     DescriptionFetcher,
     GreenhouseAdapter,
     IbmAdapter,
+    MicrosoftAdapter,
+    PcsxAdapter,
     SimplifyAdapter,
     SuccessFactorsRssAdapter,
     WorkdayAdapter,
@@ -230,3 +232,35 @@ class IbmAdapterTests(unittest.TestCase):
         self.assertEqual(job.location, "Yorktown Heights, US")
         self.assertEqual(job.employment_type, "Internship")
         self.assertEqual(result.raw_count, 2)
+
+
+class PcsxAdapterTests(unittest.TestCase):
+    def test_reads_an_eightfold_board_by_host_and_domain(self) -> None:
+        def handler(url, body):
+            if "position_details" in url:
+                return {"data": {"jobDescription": "Own the roadmap."}}
+            return {"data": {"count": 2, "positions": [
+                {"id": 7, "displayJobId": "26WD1", "name": "Intern, Product Management - Manufacturing",
+                 "locations": ["Toronto, ON, CAN"], "standardizedLocations": ["Toronto, ON, CA"], "postedTs": 1794182400},
+                {"id": 8, "name": "Principal Product Manager", "locations": ["Remote"]},
+            ]}}
+
+        client = RecordingClient(handler)
+        source = Source("autodesk", "Autodesk", (), "https://autodesk.eightfold.ai/careers", ats="pcsx",
+                        ats_options={"host": "autodesk.eightfold.ai", "domain": "autodesk.com", "queries": ["intern"]})
+        result = PcsxAdapter(client, RoleFilter()).scan(source)
+        self.assertEqual([job.title for job in result.jobs], ["Intern, Product Management - Manufacturing"])
+        job = result.jobs[0]
+        self.assertEqual(job.url, "https://autodesk.eightfold.ai/careers/job/7")
+        self.assertEqual(job.req_id, "26WD1")
+        self.assertEqual(job.country_codes, ("TORONTO, ON, CA",))
+        self.assertTrue(client.requests[0][0].startswith("https://autodesk.eightfold.ai/api/pcsx/search?domain=autodesk.com&query=intern"))
+        detail = DescriptionFetcher(client).fetch(job)
+        self.assertEqual(detail.text, "Own the roadmap.")
+        self.assertIn("autodesk.eightfold.ai/api/pcsx/position_details?position_id=7&domain=autodesk.com", client.requests[-1][0])
+
+    def test_microsoft_keeps_its_default_board(self) -> None:
+        client = RecordingClient(lambda url, body: {"data": {"count": 0, "positions": []}})
+        MicrosoftAdapter(client, RoleFilter()).scan(Source("microsoft", "Microsoft", (), "", ats="microsoft"))
+        self.assertTrue(all(url.startswith("https://apply.careers.microsoft.com/api/pcsx/search?domain=microsoft.com") for url, _ in client.requests))
+        self.assertEqual(len(client.requests), 2)

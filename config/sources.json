@@ -30,15 +30,30 @@
       "ats": "workday",
       "host": "myview.wd3.myworkdayjobs.com",
       "tenant": "myview",
-      "site": "Loblaw-Digital_Careers_Carrieres",
-      "career_url": "https://myview.wd3.myworkdayjobs.com/Loblaw-Digital_Careers_Carrieres",
+      "site": "paradox_careers",
+      "career_url": "https://myview.wd3.myworkdayjobs.com/paradox_careers",
+      "facets": {
+        "locations": [
+          "fcdb95ca62ae01a8be6beb469a017170",
+          "85c12c2ba28410dfdaf16acb2f3aa2f2",
+          "016580ec70b042bd82f593be29615425",
+          "79f34988d10910f78f15f2f1809ab613",
+          "64b6c8e4825c4f48ace86d31b921a670"
+        ]
+      },
+      "queries": [
+        ""
+      ],
+      "keyword_pages": 20,
       "added_on": "2026-11-12",
-      "discovered_via": "requested watchlist; Workday site found via web search"
+      "discovered_via": "requested watchlist; moved 2026-11-17 from the empty Loblaw-Digital_Careers_Carrieres site to Loblaw's main Workday site, where every Loblaw Digital/corporate co-op on the Simplify lists was posted",
+      "note": "paradox_careers holds 15,000+ store postings, and keyword search there is fuzzy ('co-op' matches 2,292 full-time jobs). The scan instead lists every posting at the corporate/digital offices: 500 Lake Shore Blvd W (Loblaw Digital), 1 Presidents Choice Circle (Brampton HQ), 243 Consumers Rd (Shoppers), 2 Fraser Ave (Joe Fresh) and 1685 Tech Ave. Workday only lists office facets that currently have postings; add an office's id here if a co-op appears elsewhere."
     },
     {
       "id": "loblaw-digital-sr",
       "name": "Loblaw Digital",
       "tier": "must",
+      "enabled": false,
       "ats": "smartrecruiters",
       "board": "loblawdigital",
       "career_url": "https://careers.smartrecruiters.com/loblawdigital",
@@ -49,7 +64,8 @@
         "product"
       ],
       "added_on": "2026-11-12",
-      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+      "discovered_via": "requested watchlist; board found by probing public ATS APIs",
+      "note": "Disabled 2026-11-17: the loblawdigital SmartRecruiters board only holds four postings from 2018; Loblaw Digital now posts on Loblaw's Workday site (see loblaw-digital)."
     },
     {
       "id": "interac",
@@ -206,13 +222,13 @@
       "id": "autodesk",
       "name": "Autodesk",
       "tier": "must",
-      "ats": "workday",
-      "host": "autodesk.wd1.myworkdayjobs.com",
-      "tenant": "autodesk",
-      "site": "Ext",
-      "career_url": "https://autodesk.wd1.myworkdayjobs.com/Ext",
+      "ats": "pcsx",
+      "host": "autodesk.eightfold.ai",
+      "domain": "autodesk.com",
+      "career_url": "https://autodesk.eightfold.ai/careers",
       "added_on": "2026-11-12",
-      "discovered_via": "requested watchlist; board found by probing public ATS APIs"
+      "discovered_via": "requested watchlist; moved 2026-11-17 from Workday (autodesk/Ext, left with 5 stray postings) to Autodesk's Eightfold board",
+      "note": "Eightfold's /api/apply/v2 answers 403 for Autodesk; the /api/pcsx search API (allowed by robots.txt) works."
     },
     {
       "id": "cibc-campus",
@@ -408,13 +424,16 @@
     {
       "id": "uber",
       "name": "Uber",
-      "career_url": "https://www.uber.com/us/en/careers/apm/",
+      "career_url": "https://www.uber.com/us/en/careers/",
+      "url_template": "https://iaziqy.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/{id}",
       "urls": [
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=intern&location=United+States&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=intern&location=Canada&start=0"
+        "https://iaziqy.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1,limit=100,offset=0,sortBy=POSTING_DATES_DESC,keyword=internship",
+        "https://iaziqy.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1,limit=100,offset=0,sortBy=POSTING_DATES_DESC,keyword=product%20management%20intern"
       ],
-      "paginate": true,
-      "tier": "additional"
+      "tier": "additional",
+      "added_on": "2026-11-17",
+      "discovered_via": "requested; Uber moved its postings to Oracle Recruiting Cloud site CX_1 (seen via Simplify links). Replaces the LinkedIn guest search, which returned nothing",
+      "note": "uber.com/api/ is disallowed by robots.txt and the careers HTML is behind a Cloudflare challenge. 'intern' also matches 'International'/'Internal', so the search uses 'internship', which returns every intern posting in one page."
     },
     {
       "id": "airbnb",

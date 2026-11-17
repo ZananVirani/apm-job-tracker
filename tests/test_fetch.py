@@ -56,6 +56,13 @@ class BrowserRendererTests(unittest.TestCase):
         self.assertEqual(opened.call_count, 2)
         self.assertIn("jobPostings", result.text)
 
+    def test_rate_limit_without_retry_after_backs_off_longer(self) -> None:
+        client = HttpClient(5, host_interval_seconds=0)
+        limited = HTTPError("https://careers.example.com/api/search", 429, "Too Many Requests", {}, None)
+        with patch.object(client, "_open_request", side_effect=(limited, limited, limited)), patch("apm_notifier.fetch.time.sleep") as sleep, self.assertRaises(FetchError):
+            client.fetch("https://careers.example.com/api/search")
+        self.assertEqual([int(call.args[0]) for call in sleep.call_args_list], [10, 20])
+
     def test_permanent_client_errors_are_not_retried(self) -> None:
         client = HttpClient(5, host_interval_seconds=0)
         missing = HTTPError("https://example.com", 404, "Not Found", {}, None)

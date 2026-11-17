@@ -28,7 +28,8 @@ DEFAULT_HEADERS = {
 }
 # Minimum spacing between requests to one host; LinkedIn's guest feed is stricter.
 DEFAULT_HOST_INTERVAL_SECONDS = 1.0
-SLOW_HOSTS = {"linkedin.com": 3.0, "apply.careers.microsoft.com": 3.0, "github.careers": 5.0}
+SLOW_HOSTS = {"linkedin.com": 3.0, "apply.careers.microsoft.com": 5.0, "github.careers": 5.0}
+RATE_LIMIT_BACKOFF_SECONDS = 10.0
 # Standard transient statuses plus Cloudflare's origin errors (520-527, 530). Workday's
 # US clusters sit behind Cloudflare and intermittently answer 521 "web server is down".
 RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530}
@@ -111,7 +112,14 @@ class HttpClient:
                 if error.code not in RETRYABLE_STATUS:
                     break
                 retry_after = error.headers.get("Retry-After", "")
-                delay = int(retry_after) if retry_after.isdigit() else 1.5 * (2 ** attempt)
+                if retry_after.isdigit():
+                    delay = int(retry_after)
+                elif error.code == 429:
+                    # Rate limits without Retry-After (e.g. Microsoft's careers API) outlast
+                    # the short server-error backoff; wait 10s, then 20s.
+                    delay = RATE_LIMIT_BACKOFF_SECONDS * (2 ** attempt)
+                else:
+                    delay = 1.5 * (2 ** attempt)
                 if attempt + 1 < self.attempts:
                     time.sleep(min(delay, 20) + random.random() / 4)
             except (

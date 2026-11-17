@@ -323,7 +323,7 @@ class Monitor:
         # Text supplied by an official listing API is authoritative even when short.
         has_text = bool(plain_text(job.full_text).strip())
         preliminary = self._classify(job)
-        if has_text or preliminary.decision == REJECT:
+        if has_text or (preliminary.decision == REJECT and not preliminary.needs_description):
             return ProcessedJob(job, preliminary)
 
         cached = self._cached_description(job)

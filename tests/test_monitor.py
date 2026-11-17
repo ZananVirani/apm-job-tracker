@@ -282,6 +282,18 @@ class SchedulingAndDescriptionTests(StoreCase):
         self.assertEqual(row["decision"], ACCEPT)
         self.assertEqual(row["term_length"], "4 months")
 
+    def test_generic_intern_title_is_judged_on_its_fetched_description(self) -> None:
+        detail = {"jobPostingInfo": {"jobDescription": PM_TEXT + " This is a 4-month internship starting May 2027.", "location": "Toronto, ON", "canApply": True, "jobReqId": "R2"}}
+        client = StaticClient(json.dumps(detail))
+        monitor = monitor_for([source()], client, self.store, FakeNotifier())
+        intern = Job("wd", "Example", "Summer 2027 Intern - Digital Innovation", "https://jobs.example.com/2", "Toronto, ON", detail_ref="workday:h:t:s:/job/2")
+        processed = monitor._process(intern)
+        self.assertEqual(client.calls, 1)
+        self.assertEqual(processed.result.decision, ACCEPT)
+        # A generic title with no intern marker is still rejected without a request.
+        monitor._process(Job("wd", "Example", "Commercial Banking Analyst", "https://jobs.example.com/3", "Toronto, ON", detail_ref="workday:h:t:s:/job/3"))
+        self.assertEqual(client.calls, 1)
+
     def test_description_budget_defers_postings(self) -> None:
         job = Job("wd", "Example", "Product Analyst Intern", "https://jobs.example.com/1", "Toronto, ON", detail_ref="workday:h:t:s:/job/1")
         monitor = monitor_for([source()], StaticClient("{}"), self.store, FakeNotifier(), max_description_fetches=0)

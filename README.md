@@ -20,15 +20,16 @@ Every decision stores a one-line reason and the exact quoted text that triggered
 
 ## Coverage
 
-`config/sources.json` holds 31 must-include companies (scanned every run) and about 120 additional companies (scanned at most hourly), including every company listed on [apmlist.com](https://apmlist.com/) (a few through a parent company's board, e.g. Mojang via Microsoft and Splunk via Cisco). Structured adapters read official public job-board APIs — Greenhouse, Lever, Ashby, SmartRecruiters, Workday CxS (with automatic Canada/US and intern facet discovery), SAP SuccessFactors RSS, Microsoft and Eightfold — and fetch the full description for each candidate. A few sites still use the legacy HTML/JSON extractors. The Simplify Summer 2027 list and a community tracker act as secondary discovery sources; employers found only there are added to a company registry.
+`config/sources.json` holds 31 must-include companies (scanned every run) and about 120 additional companies (scanned at most hourly), including every company listed on [apmlist.com](https://apmlist.com/) (a few through a parent company's board, e.g. Mojang via Microsoft and Splunk via Cisco). Structured adapters read official public job-board APIs — Greenhouse, Lever, Ashby, SmartRecruiters, Workday CxS (with automatic Canada/US and intern facet discovery), SAP SuccessFactors RSS, Microsoft and Eightfold (both the `apply/v2` and newer `pcsx` search APIs) — and fetch the full description for each candidate. A few sites still use the legacy HTML/JSON extractors. The Simplify Summer 2027 list and a community tracker act as secondary discovery sources; employers found only there are added to a company registry.
 
 Disabled entries document companies whose careers sites could not be read politely (no public board, login or bot walls, robots.txt). `python3 -m apm_notifier report` shows which companies have zero matching postings versus failing adapters.
 
 ## How it behaves
 
 - Must-include companies are checked on every run (every five minutes in the cloud); additional companies at most every `ADDITIONAL_SCAN_MINUTES`.
-- Requests identify themselves with a descriptive User-Agent, are spaced at least `HOST_INTERVAL_SECONDS` apart per host (3s for LinkedIn and Microsoft), retry with exponential backoff, and check robots.txt before fetching any HTML job page. Logins, CAPTCHAs and paywalls are never bypassed.
+- Requests identify themselves with a descriptive User-Agent, are spaced at least `HOST_INTERVAL_SECONDS` apart per host (3s for LinkedIn, 5s for Microsoft), retry with exponential backoff (10s then 20s after a rate-limit 429 that gives no `Retry-After`), and check robots.txt before fetching any HTML job page. Logins, CAPTCHAs and paywalls are never bypassed.
 - Descriptions are cached in SQLite and refreshed every `DESCRIPTION_REFRESH_HOURS`; at most `MAX_DESCRIPTION_FETCHES` are fetched per run and the rest are picked up next run.
+- Intern/co-op postings with a generic title (e.g. "Summer Intern – Digital Innovation") are judged on their description, which is fetched before deciding even when the listing API omits it.
 - Each posting is alerted **exactly once**, the first time it is an open ACCEPT/REVIEW. Later changes (REVIEW → ACCEPT, closed, reopened, re-classified) are recorded but never re-alerted.
 - A posting is identified by company + requisition id, then by its job URL. A repost with a new requisition id or URL is a new posting and is alerted, even when the company, title and location match an earlier one. Title + location only links an aggregator copy to the employer's own posting, or an open posting with no requisition id whose page URL changed.
 - The digest is sorted by must-include company, core title, GTA, then newest.

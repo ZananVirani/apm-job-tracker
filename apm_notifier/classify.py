@@ -93,6 +93,8 @@ class Classification:
     close_date: str = ""
     status: str = "open"
     description_available: bool = False
+    # Rejected only because no description was supplied; reading it could change the decision.
+    needs_description: bool = False
 
     @property
     def reason(self) -> str:
@@ -593,6 +595,9 @@ def classify(
             if category.category == "other":
                 # Kept for audit; a generic title alone is not evidence of product work.
                 result._flag(REJECT, "Generic title and no readable description to show product work", title)
+                # An intern/co-op title is judged on its description, so fetch it before
+                # rejecting; other generic titles are not worth a description request.
+                result.needs_description = not text and bool(INTERN_MARKER.search(title) or job.term_hint)
                 return result
             result._flag(REVIEW, f"{category.label} title; description could not be read to confirm product focus")
         elif is_product_oriented(signals, threshold):
