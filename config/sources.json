@@ -1023,6 +1023,16 @@
       "discovered_via": "requested list; Workday site found via web search"
     },
     {
+      "id": "tenstorrent",
+      "name": "Tenstorrent",
+      "tier": "must",
+      "ats": "greenhouse",
+      "board": "tenstorrentuniversity",
+      "career_url": "https://job-boards.greenhouse.io/tenstorrentuniversity",
+      "added_on": "2026-11-19",
+      "discovered_via": "user request (missed GTM (FAE & Customer Success) and Product Intern); internships live on the separate 'tenstorrentuniversity' Greenhouse board, not 'tenstorrent' (full-time only)"
+    },
+    {
       "id": "teck",
       "name": "Teck Resources Limited",
       "tier": "must",
